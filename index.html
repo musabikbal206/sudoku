@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sudoku Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom thick borders for Sudoku grid */
+        .cell {
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .cell:nth-child(9n) { border-right: none; } /* End of row */
+        .cell:nth-child(3n) { border-right-width: 2px; border-right-color: #312e81; } /* Vertical thick */
+        .cell:nth-child(9n) { border-right: none; } /* Fix end of row override */
+        
+        /* Horizontal thick lines handled by row containers or specific cell logic in JS */
+        
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Disable double tap zoom */
+        button { touch-action: manipulation; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-hidden">
+
+    <!-- ================= VIEW: MENU ================= -->
+    <div id="menu-view" class="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-md mx-auto fade-in">
+        <div class="w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 p-8 text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-y-6 scale-150 origin-top-left"></div>
+                <h1 class="text-4xl font-black text-white tracking-tight mb-1 relative z-10">SUDOKU</h1>
+                <p className="text-indigo-200 text-sm font-medium relative z-10">Challenge Yourself or a Friend</p>
+            </div>
+            
+            <div class="p-8 space-y-8">
+                <!-- Difficulty -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        Difficulty
+                    </label>
+                    <div class="grid grid-cols-4 gap-2" id="difficulty-buttons">
+                        <!-- Buttons injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="space-y-4">
+                    <button onclick="startGame(false)" class="w-full p-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-3 group active:scale-95">
+                        <div class="p-2 bg-slate-800 rounded-lg">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-slate-400 font-normal">Just Play</div>
+                            <div class="text-lg leading-none">Single Player</div>
+                        </div>
+                    </button>
+
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-slate-300 text-xs font-bold uppercase">Or Play Competitive</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    <!-- Code Section -->
+                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                            <span class="font-bold text-indigo-900 text-sm">Game Code</span>
+                        </div>
+                        <p class="text-xs text-indigo-600/70 leading-relaxed">
+                            Enter the same code as your friend to play the <strong>exact same board</strong>.
+                        </p>
+                        
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <input id="game-code-input" type="text" placeholder="ENTER CODE" class="w-full p-3 bg-white border-2 border-indigo-100 rounded-xl outline-none focus:border-indigo-500 font-mono font-bold text-indigo-900 placeholder:text-indigo-200 uppercase tracking-widest text-center" oninput="this.value = this.value.toUpperCase()">
+                                <button onclick="generateRandomCode()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Random Code">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
+                            </div>
+                            <button onclick="startGame(true)" class="px-5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                                GO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= VIEW: GAME ================= -->
+    <div id="game-view" class="hidden flex-col h-screen">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10 shrink-0">
+            <button onclick="showMenu()" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </button>
+            
+            <div class="flex flex-col items-center">
+                <h1 id="game-header-title" class="font-bold text-lg leading-tight flex items-center gap-2">
+                    <!-- Title injected here -->
+                </h1>
+                <div class="flex items-center gap-1.5 text-slate-500 font-mono text-sm">
+                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="timer-display">0:00</span>
+                </div>
+            </div>
+
+            <button onclick="togglePause()" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                <svg id="pause-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="flex-1 flex flex-col items-center justify-start p-4 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar">
+            
+            <!-- Board -->
+            <div id="board-container" class="w-full aspect-square bg-slate-800 p-1 rounded-xl shadow-2xl mb-6 transition-all duration-300">
+                <!-- Grid injected here -->
+                <div id="sudoku-grid" class="grid grid-cols-9 grid-rows-9 bg-slate-300 border-2 border-indigo-900 h-full w-full rounded-lg overflow-hidden bg-white"></div>
+            </div>
+
+            <!-- Controls -->
+            <div id="controls-container" class="w-full space-y-4 pb-4">
+                <!-- Tool Bar -->
+                <div class="flex justify-between items-center px-2">
+                    <button id="btn-notes" onclick="toggleNotes()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl text-slate-500 transition-all hover:bg-white hover:shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        <span class="text-[10px] font-bold uppercase tracking-wide">Notes</span>
+                    </button>
+                    
+                    <button onclick="handleErase()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl text-slate-500 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <span class="text-[10px] font-bold uppercase tracking-wide">Erase</span>
+                    </button>
+                    
+                    <button onclick="resetGame()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span class="text-[10px] font-bold uppercase tracking-wide">Reset</span>
+                    </button>
+
+                    <button onclick="checkBoard()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl text-slate-500 hover:bg-white hover:text-emerald-600 hover:shadow-sm transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-[10px] font-bold uppercase tracking-wide">Check</span>
+                    </button>
+                </div>
+
+                <!-- Numpad -->
+                <div class="grid grid-cols-9 gap-1 sm:gap-2">
+                    <!-- Generated via JS -->
+                    <div id="numpad-container" class="contents"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: WINNER ================= -->
+    <div id="winner-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+            <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-600 shadow-inner">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+            </div>
+            <h2 class="text-3xl font-black text-slate-800 mb-2">SOLVED!</h2>
+            <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Final Time</p>
+                <p id="final-time-display" class="text-3xl font-mono font-bold text-indigo-600">0:00</p>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="showMenu()" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                    Main Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME LOGIC ENGINE ---
+        const BLANK = 0;
+        let board = [];
+        let initialBoard = [];
+        let solution = [];
+        let notes = {}; // key: "r-c", value: [1,2...]
+        
+        let difficulty = 'Medium';
+        let currentCode = null;
+        
+        let timer = 0;
+        let timerInterval = null;
+        let isPaused = false;
+        let isGameComplete = false;
+        
+        let selectedCell = null; // [r, c]
+        let notesMode = false;
+
+        // --- RNG ---
+        function createSeededRandom(seedStr) {
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < seedStr.length; i++) {
+                h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
+            }
+            return function() {
+                let t = h += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        // --- SUDOKU ALGORITHMS ---
+        function isValid(bd, row, col, num) {
+            for (let x = 0; x < 9; x++) if (bd[row][x] === num && x !== col) return false;
+            for (let x = 0; x < 9; x++) if (bd[x][col] === num && x !== row) return false;
+            const startRow = 3 * Math.floor(row / 3);
+            const startCol = 3 * Math.floor(col / 3);
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (bd[startRow + i][startCol + j] === num && (startRow + i !== row || startCol + j !== col)) return false;
+                }
+            }
+            return true;
+        }
+
+        function solveSudoku(bd, randomFunc = Math.random) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (bd[row][col] === BLANK) {
+                        const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+                            .map(value => ({ value, sort: randomFunc() }))
+                            .sort((a, b) => a.sort - b.sort)
+                            .map(({ value }) => value);
+                        
+                        for (let num of nums) {
+                            if (isValid(bd, row, col, num)) {
+                                bd[row][col] = num;
+                                if (solveSudoku(bd, randomFunc)) return true;
+                                bd[row][col] = BLANK;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function generatePuzzle(diff, seedCode = null) {
+            const rng = seedCode ? createSeededRandom(seedCode) : Math.random;
+            
+            // 1. Solution
+            const sol = Array(9).fill().map(() => Array(9).fill(BLANK));
+            solveSudoku(sol, rng);
+            
+            // 2. Puzzle
+            const puz = sol.map(row => [...row]);
+            
+            // 3. Remove
+            let attempts = 40;
+            if (diff === 'Easy') attempts = 30;
+            if (diff === 'Medium') attempts = 40;
+            if (diff === 'Hard') attempts = 50;
+            if (diff === 'Extreme') attempts = 60;
+
+            while (attempts > 0) {
+                let row = Math.floor(rng() * 9);
+                let col = Math.floor(rng() * 9);
+                while(puz[row][col] === BLANK) {
+                    row = Math.floor(rng() * 9);
+                    col = Math.floor(rng() * 9);
+                }
+                puz[row][col] = BLANK;
+                attempts--;
+            }
+            return { puzzle: puz, solution: sol };
+        }
+
+        // --- UI INITIALIZATION ---
+        window.onload = function() {
+            renderDifficultyButtons();
+            renderNumpad();
+        };
+
+        function renderDifficultyButtons() {
+            const container = document.getElementById('difficulty-buttons');
+            const levels = ['Easy', 'Medium', 'Hard', 'Extreme'];
+            container.innerHTML = levels.map(d => `
+                <button onclick="setDifficulty('${d}')" 
+                    class="py-2 px-1 rounded-lg text-xs sm:text-sm font-bold transition-all ${difficulty === d ? 'bg-indigo-600 text-white shadow-md transform scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}"
+                >
+                    ${d}
+                </button>
+            `).join('');
+        }
+
+        function renderNumpad() {
+            const container = document.getElementById('numpad-container');
+            let html = '';
+            for(let i=1; i<=9; i++) {
+                html += `
+                    <button onclick="handleInput(${i})" class="aspect-[4/5] bg-white rounded-xl shadow-[0_2px_0_0_rgba(0,0,0,0.05)] border-b-2 border-slate-100 text-2xl font-bold text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center select-none touch-manipulation">
+                        ${i}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function setDifficulty(d) {
+            difficulty = d;
+            renderDifficultyButtons();
+        }
+
+        function generateRandomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let result = '';
+            for (let i = 0; i < 5; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('game-code-input').value = result;
+        }
+
+        // --- GAME CONTROL ---
+        function startGame(useCode) {
+            const inputVal = document.getElementById('game-code-input').value.toUpperCase();
+            
+            if (useCode) {
+                if(!inputVal) {
+                    generateRandomCode(); // auto generate if empty
+                    currentCode = document.getElementById('game-code-input').value;
+                } else {
+                    currentCode = inputVal;
+                }
+            } else {
+                currentCode = null;
+            }
+
+            const data = generatePuzzle(difficulty, currentCode);
+            initialBoard = data.puzzle.map(r => [...r]);
+            board = data.puzzle.map(r => [...r]);
+            solution = data.solution;
+            
+            // Reset state
+            timer = 0;
+            isPaused = false;
+            isGameComplete = false;
+            selectedCell = null;
+            notes = {};
+            notesMode = false;
+            
+            updateNotesUI();
+            
+            // UI
+            document.getElementById('menu-view').classList.add('hidden');
+            document.getElementById('game-view').classList.remove('hidden');
+            document.getElementById('game-view').classList.add('flex');
+            document.getElementById('winner-modal').classList.add('hidden');
+            
+            // Header
+            const titleEl = document.getElementById('game-header-title');
+            if (currentCode) {
+                titleEl.innerHTML = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-mono tracking-wider border border-indigo-200">#${currentCode}</span>`;
+            } else {
+                titleEl.innerText = difficulty;
+            }
+
+            renderBoard();
+            startTimer();
+        }
+
+        function showMenu() {
+            stopTimer();
+            document.getElementById('game-view').classList.add('hidden');
+            document.getElementById('game-view').classList.remove('flex');
+            document.getElementById('menu-view').classList.remove('hidden');
+            document.getElementById('winner-modal').classList.add('hidden');
+        }
+
+        function resetGame() {
+             if (confirm("Reset the board?")) {
+                 board = initialBoard.map(r => [...r]);
+                 notes = {};
+                 renderBoard();
+             }
+        }
+
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timer++;
+                const mins = Math.floor(timer / 60);
+                const secs = timer % 60;
+                document.getElementById('timer-display').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const container = document.getElementById('board-container');
+            const controls = document.getElementById('controls-container');
+            
+            if(isPaused) {
+                stopTimer();
+                container.classList.add('blur-md', 'opacity-50', 'pointer-events-none');
+                controls.classList.add('invisible');
+            } else {
+                startTimer();
+                container.classList.remove('blur-md', 'opacity-50', 'pointer-events-none');
+                controls.classList.remove('invisible');
+            }
+        }
+
+        // --- BOARD RENDERING & INTERACTION ---
+        function renderBoard() {
+            const grid = document.getElementById('sudoku-grid');
+            let html = '';
+            
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    const val = board[r][c];
+                    const isInit = initialBoard[r][c] !== BLANK;
+                    const isSel = selectedCell && selectedCell[0] === r && selectedCell[1] === c;
+                    
+                    // Borders
+                    let borderClass = 'cell border-gray-300';
+                    if (c === 0) borderClass += ' border-l-2 border-l-indigo-900';
+                    if (r === 0) borderClass += ' border-t-2 border-t-indigo-900';
+                    if (r === 2 || r === 5 || r === 8) borderClass += ' border-b-2 border-b-indigo-900';
+                    if (c === 8) borderClass += ' border-r-2 border-r-indigo-900';
+
+                    // Backgrounds
+                    let bgClass = 'bg-white';
+                    let textClass = 'text-blue-600';
+
+                    if (isSel) {
+                        bgClass = 'bg-blue-500';
+                        textClass = 'text-white';
+                    } else if (selectedCell) {
+                        const [sr, sc] = selectedCell;
+                        const sVal = board[sr][sc];
+                        // Highlight same number
+                        if (val !== BLANK && sVal === val) bgClass = 'bg-blue-200';
+                        // Highlight related
+                        else if (sr === r || sc === c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) {
+                            bgClass = 'bg-blue-50';
+                        }
+                    }
+                    
+                    if (isInit) {
+                        bgClass = isSel ? 'bg-blue-500' : (bgClass === 'bg-white' ? 'bg-gray-100' : bgClass);
+                        textClass = isSel ? 'text-white' : 'text-slate-900 font-extrabold';
+                    }
+
+                    // Notes
+                    let content = val !== BLANK ? val : '';
+                    if (val === BLANK) {
+                        const cellNotes = notes[`${r}-${c}`] || [];
+                        if (cellNotes.length > 0) {
+                             content = `<div class="grid grid-cols-3 w-full h-full p-0.5 pointer-events-none">
+                                ${[1,2,3,4,5,6,7,8,9].map(n => 
+                                    `<div class="flex items-center justify-center text-[8px] leading-none ${cellNotes.includes(n) ? 'text-slate-500' : 'invisible'}">${n}</div>`
+                                ).join('')}
+                             </div>`;
+                        }
+                    }
+
+                    html += `<div onclick="selectCell(${r}, ${c})" class="${borderClass} ${bgClass} ${textClass} w-full h-full flex items-center justify-center text-xl sm:text-2xl cursor-pointer select-none transition-colors duration-75 relative">
+                        ${content}
+                    </div>`;
+                }
+            }
+            grid.innerHTML = html;
+        }
+
+        function selectCell(r, c) {
+            if (isGameComplete || isPaused) return;
+            selectedCell = [r, c];
+            renderBoard();
+        }
+
+        function toggleNotes() {
+            notesMode = !notesMode;
+            updateNotesUI();
+        }
+
+        function updateNotesUI() {
+            const btn = document.getElementById('btn-notes');
+            if (notesMode) {
+                btn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
+                btn.classList.remove('text-slate-500', 'hover:bg-white');
+            } else {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-500', 'hover:bg-white');
+            }
+        }
+
+        function handleInput(num) {
+            if (!selectedCell || isGameComplete || isPaused) return;
+            const [r, c] = selectedCell;
+            
+            if (initialBoard[r][c] !== BLANK) return;
+
+            if (notesMode) {
+                const key = `${r}-${c}`;
+                let arr = notes[key] || [];
+                if (arr.includes(num)) arr = arr.filter(n => n !== num);
+                else arr.push(num);
+                notes[key] = arr;
+            } else {
+                // Toggle
+                board[r][c] = (board[r][c] === num) ? BLANK : num;
+                checkWin();
+            }
+            renderBoard();
+        }
+
+        function handleErase() {
+            if (!selectedCell || isGameComplete || isPaused) return;
+            const [r, c] = selectedCell;
+            if (initialBoard[r][c] !== BLANK) return;
+            
+            board[r][c] = BLANK;
+            notes[`${r}-${c}`] = [];
+            renderBoard();
+        }
+
+        function checkWin() {
+            let filled = 0;
+            let correct = 0;
+            for(let i=0; i<9; i++){
+                for(let j=0; j<9; j++){
+                    if(board[i][j] !== BLANK) {
+                        filled++;
+                        if(board[i][j] === solution[i][j]) correct++;
+                    }
+                }
+            }
+            
+            if (filled === 81 && correct === 81) {
+                isGameComplete = true;
+                stopTimer();
+                document.getElementById('final-time-display').innerText = document.getElementById('timer-display').innerText;
+                document.getElementById('winner-modal').classList.remove('hidden');
+                // Fireworks logic could go here
+            }
+        }
+
+        function checkBoard() {
+            let errors = 0;
+            for(let i=0; i<9; i++){
+                for(let j=0; j<9; j++){
+                    if(board[i][j] !== BLANK && board[i][j] !== solution[i][j]) {
+                        errors++;
+                    }
+                }
+            }
+            if(errors === 0) alert("Perfect so far!");
+            else alert(`Found ${errors} mistakes.`);
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (!selectedCell || isGameComplete || isPaused) return;
+            const key = e.key;
+            if (key >= '1' && key <= '9') handleInput(parseInt(key));
+            if (key === 'Backspace' || key === 'Delete') handleErase();
+            if (key === 'n') toggleNotes();
+            
+            // Arrow keys
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) {
+                let [r, c] = selectedCell;
+                if (key === 'ArrowUp') r = Math.max(0, r-1);
+                if (key === 'ArrowDown') r = Math.min(8, r+1);
+                if (key === 'ArrowLeft') c = Math.max(0, c-1);
+                if (key === 'ArrowRight') c = Math.min(8, c+1);
+                selectCell(r, c);
+            }
+        });
+
+    </script>
+</body>
+</html>
+

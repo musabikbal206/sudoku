@@ -4,127 +4,347 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sudoku Master</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
+        /* --- OFFLINE CSS SYSTEM (Replaces Tailwind) --- */
+        :root {
+            --bg-body: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --success: #22c55e;
+            --error: #ef4444;
+            --warning: #eab308;
+            --cell-size: clamp(32px, 10vw, 48px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            /* Mobile Viewport Height Fix */
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
         
-        /* Sudoku Grid Borders */
+        /* Typography */
+        .font-bold { font-weight: 700; }
+        .font-mono { font-family: 'Courier New', Courier, monospace; }
+        .text-center { text-align: center; }
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .uppercase { text-transform: uppercase; }
+        .tracking-wider { letter-spacing: 0.05em; }
+
+        /* Layout & Spacing */
+        .p-2 { padding: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-8 { padding: 2rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+
+        /* Components */
+        .btn {
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-primary { background-color: var(--primary); color: var(--white); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        
+        .card {
+            background: var(--white);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            max-width: 28rem;
+            margin: 0 auto;
+        }
+
+        .header {
+            height: 3.5rem;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            flex-shrink: 0;
+        }
+
+        .status-bar {
+            background: #f1f5f9;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        /* Grid */
+        .sudoku-container {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #1e293b;
+            padding: 4px;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .grid-9x9 {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            background: #cbd5e1;
+            border: 2px solid #1e293b;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            height: 100%;
+            background-color: var(--white);
+        }
+
         .cell {
-            border-right: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            color: var(--primary);
         }
-        .cell:nth-child(9n) { border-right: none; } 
-        .cell:nth-child(3n) { border-right-width: 2px; border-right-color: #312e81; } 
-        .cell:nth-child(9n) { border-right: none; } 
+        /* Thick Borders */
+        .cell:nth-child(9n) { border-right: none; }
+        .cell:nth-child(3n) { border-right: 2px solid #1e293b; }
+        .cell:nth-child(9n) { border-right: none; } /* Reset for edge */
         
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .border-b-thick { border-bottom: 2px solid #1e293b !important; }
+        .border-r-thick { border-right: 2px solid #1e293b !important; }
         
-        /* Hint Animations */
-        .hint-target-pulse {
-            animation: pulse-green 2s infinite;
-            background-color: #f0fdf4 !important; 
-            font-weight: 800;
-        }
-        @keyframes pulse-green {
-            0% { box-shadow: inset 0 0 0 2px #22c55e; }
-            50% { box-shadow: inset 0 0 0 6px #22c55e; }
-            100% { box-shadow: inset 0 0 0 2px #22c55e; }
-        }
+        /* Cell States */
+        .cell.selected { background-color: #3b82f6; color: white; }
+        .cell.related { background-color: #eff6ff; }
+        .cell.same-val { background-color: #bfdbfe; }
+        .cell.initial { font-weight: 800; color: #0f172a; background-color: #f1f5f9; }
+        .cell.initial.selected { background-color: #3b82f6; color: white; }
+        .cell.error { background-color: #fee2e2; color: #ef4444; }
+        .cell.selected.error { background-color: #ef4444; color: white; }
 
-        .hint-blocker-pulse {
-            background-color: #fef2f2 !important; 
-            color: #ef4444 !important; 
-            transition: all 0.3s ease;
-        }
-
+        /* Hint Styles */
+        .hint-target { animation: pulse-green 2s infinite; background-color: #f0fdf4 !important; }
+        .hint-region { background-color: #fefce8 !important; } 
+        .hint-blocker { background-color: #fef2f2 !important; color: #ef4444 !important; }
+        
         .ghost-number {
-            color: #22c55e;
+            color: var(--success);
             opacity: 0.6;
-            transform: scale(1.2);
-            animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes bounce-in {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1.2); opacity: 0.6; }
+            font-weight: bold;
+            animation: bounce 0.5s;
         }
 
-        button { touch-action: manipulation; }
+        /* Controls Grid */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        .control-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            color: var(--text-muted);
+            background: transparent;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            min-height: 3.5rem;
+        }
+        .control-btn:hover { background: var(--white); color: var(--primary); box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+        .control-btn.active { background: var(--primary); color: var(--white); }
+        .control-btn svg { width: 1.25rem; height: 1.25rem; margin-bottom: 0.25rem; }
+
+        /* Numpad */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 0.25rem;
+        }
+        .num-btn {
+            aspect-ratio: 4/5;
+            background: var(--white);
+            border-radius: 0.75rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .num-btn:active { transform: translateY(2px); border-bottom: none; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-green { 0%, 100% { box-shadow: inset 0 0 0 2px var(--success); } 50% { box-shadow: inset 0 0 0 4px var(--success); } }
+        @keyframes bounce { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 24rem;
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Accessibility Focus */
+        .cell:focus-visible, button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+            z-index: 20;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-hidden">
+<body>
 
     <!-- ================= VIEW: MENU ================= -->
-    <div id="menu-view" class="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-md mx-auto fade-in relative">
+    <div id="menu-view" class="flex-1 flex flex-col items-center justify-center p-4 w-full relative fade-in">
         
         <!-- Language Switch -->
-        <div class="absolute top-4 right-4 z-20 bg-white rounded-full shadow-sm border border-slate-200 p-1 flex">
-            <button onclick="setLanguage('tr')" id="lang-tr" class="px-3 py-1 rounded-full text-xs font-bold transition-all bg-indigo-600 text-white">TR</button>
-            <button onclick="setLanguage('en')" id="lang-en" class="px-3 py-1 rounded-full text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all">EN</button>
+        <div class="absolute" style="top: 1rem; right: 1rem; z-index: 20; background: white; padding: 4px; border-radius: 999px; border: 1px solid var(--border);">
+            <button onclick="setLanguage('tr')" id="lang-tr" class="btn text-xs font-bold px-4 py-1" style="border-radius: 999px;">TR</button>
+            <button onclick="setLanguage('en')" id="lang-en" class="btn text-xs font-bold px-4 py-1" style="border-radius: 999px;">EN</button>
         </div>
 
-        <div class="w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-            <div class="bg-indigo-600 p-8 text-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-y-6 scale-150 origin-top-left"></div>
-                <h1 class="text-4xl font-black text-white tracking-tight mb-1 relative z-10">SUDOKU</h1>
-                <p data-key="subtitle" class="text-indigo-200 text-sm font-medium relative z-10">Meydan Oku</p>
+        <div class="card w-full">
+            <div class="p-8 text-center relative" style="background: var(--primary);">
+                <div class="absolute" style="inset:0; background: #fff; opacity: 0.1; transform: skewY(-6deg) scale(1.5); transform-origin: top left;"></div>
+                <h1 class="text-3xl font-bold" style="color: white; margin-bottom: 0.5rem; position: relative;">SUDOKU</h1>
+                <p data-key="subtitle" class="text-sm font-medium" style="color: #c7d2fe; position: relative;">Meydan Oku</p>
+                <div id="hint-msg-display" class="absolute bottom-1 left-0 right-0 text-xs font-bold" style="color: rgba(255,255,255,0.9); display:none;"></div>
             </div>
             
-            <div class="p-8 space-y-8">
+            <div class="p-8">
                 <!-- Difficulty -->
-                <div class="space-y-3">
-                    <label data-key="difficulty" class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <div class="mb-6">
+                    <label data-key="difficulty" class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 mb-1" style="color: var(--text-muted);">
                         Zorluk
                     </label>
-                    <div class="grid grid-cols-4 gap-2" id="difficulty-buttons"></div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;" id="difficulty-buttons"></div>
                 </div>
 
                 <!-- Actions -->
-                <div class="space-y-4">
-                    <button id="btn-start" onclick="startGame(false)" class="w-full p-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-3 group active:scale-95">
-                        <div class="p-2 bg-slate-800 rounded-lg">
-                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="flex flex-col gap-2">
+                     <!-- Continue Button (Hidden by default) -->
+                     <button id="btn-continue" onclick="loadSavedGame()" class="hidden btn w-full p-4 font-bold mb-2" style="border-radius: 0.75rem; justify-content: center; gap: 0.5rem; background: var(--success); color: white;">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                        <span data-key="continue">Devam Et</span>
+                    </button>
+
+                    <button id="btn-start" onclick="startGame(false)" class="btn btn-primary w-full p-4 font-bold" style="border-radius: 0.75rem; justify-content: flex-start; gap: 1rem;">
+                        <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </div>
-                        <div class="text-left">
-                            <div data-key="justPlay" class="text-sm text-slate-400 font-normal">Hemen Oyna</div>
-                            <div data-key="singlePlayer" class="text-lg leading-none">Tek Oyunculu</div>
+                        <div style="text-align: left;">
+                            <div data-key="justPlay" class="text-sm" style="opacity: 0.8; font-weight: 400;">Yeni Oyun</div>
+                            <div data-key="singlePlayer" class="text-lg" style="line-height: 1;">Tek Oyunculu</div>
                         </div>
                     </button>
-                    <!-- Loading State for Start Button -->
-                    <div id="loading-start" class="hidden w-full p-4 bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2">
-                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+
+                    <!-- Daily Challenge Button -->
+                    <button id="btn-daily" onclick="startDailyChallenge()" class="btn w-full p-4 font-bold" style="border-radius: 0.75rem; justify-content: flex-start; gap: 1rem; background: #8b5cf6; color: white;">
+                        <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div style="text-align: left;">
+                            <div data-key="dailyChallenge" class="text-lg" style="line-height: 1;">Günlük Meydan Okuma</div>
+                            <div id="daily-date-display" class="text-xs" style="opacity: 0.8; font-weight: 400; margin-top:0.25rem;"></div>
+                        </div>
+                    </button>
+                    
+                    <!-- Loading State -->
+                    <div id="loading-start" class="hidden w-full p-4 btn-primary font-bold flex items-center justify-center gap-2" style="border-radius: 0.75rem; background: #334155;">
+                        <svg class="animate-spin" style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <span data-key="generating">Oluşturuluyor...</span>
                     </div>
 
-                    <div class="relative flex py-2 items-center">
-                        <div class="flex-grow border-t border-slate-200"></div>
-                        <span data-key="competitive" class="flex-shrink-0 mx-4 text-slate-300 text-xs font-bold uppercase">Rekabetçi Mod</span>
-                        <div class="flex-grow border-t border-slate-200"></div>
+                    <div class="flex items-center py-3">
+                        <div style="flex:1; height: 1px; background: var(--border);"></div>
+                        <span data-key="competitive" class="px-4 text-xs font-bold uppercase" style="color: #cbd5e1;">Rekabetçi Mod</span>
+                        <div style="flex:1; height: 1px; background: var(--border);"></div>
                     </div>
 
                     <!-- Code Section -->
-                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                    <div class="p-4" style="background: #eef2ff; border-radius: 1rem; border: 1px solid #e0e7ff;">
                         <div class="flex items-center gap-2 mb-1">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                            <span data-key="gameCode" class="font-bold text-indigo-900 text-sm">Oyun Kodu</span>
+                            <span data-key="gameCode" class="font-bold text-sm" style="color: var(--primary);">Oyun Kodu</span>
                         </div>
-                        <p data-key="codeDesc" class="text-xs text-indigo-600/70 leading-relaxed">
-                            Arkadaşınızla <strong>aynı tahtada</strong> oynamak için aynı kodu girin.
-                        </p>
+                        <p data-key="codeDesc" class="text-xs mb-2" style="color: #6366f1; opacity: 0.8;">Arkadaşınızla aynı tahtada oynamak için.</p>
                         
                         <div class="flex gap-2">
-                            <div class="relative flex-1">
-                                <input id="game-code-input" type="text" placeholder="KOD" class="w-full p-3 bg-white border-2 border-indigo-100 rounded-xl outline-none focus:border-indigo-500 font-mono font-bold text-indigo-900 placeholder:text-indigo-200 uppercase tracking-widest text-center" oninput="this.value = this.value.toUpperCase()">
-                                <button onclick="generateRandomCode()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Random Code">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <div class="relative" style="flex: 1;">
+                                <input id="game-code-input" type="text" aria-label="Game Code" placeholder="KOD" class="w-full p-2 font-mono font-bold text-center uppercase" style="border: 2px solid #c7d2fe; border-radius: 0.75rem; outline: none; color: var(--primary);" oninput="this.value = this.value.toUpperCase()">
+                                <button onclick="generateRandomCode()" aria-label="Generate Random Code" class="absolute btn" style="right: 0.5rem; top: 50%; transform: translateY(-50%); color: #818cf8;">
+                                    <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 </button>
                             </div>
-                            <button onclick="startGame(true)" class="px-5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95">
-                                GO
-                            </button>
+                            <button onclick="startGame(true)" class="btn btn-primary font-bold px-4" style="border-radius: 0.75rem;">GO</button>
                         </div>
                     </div>
                 </div>
@@ -133,184 +353,114 @@
     </div>
 
     <!-- ================= VIEW: GAME ================= -->
-    <div id="game-view" class="hidden flex-col h-screen">
+    <div id="game-view" class="hidden h-full flex-col">
         
         <!-- Header -->
-        <div class="bg-white shadow-sm border-b px-4 py-2 flex items-center justify-between sticky top-0 z-10 shrink-0 h-14">
-            <button onclick="showMenu()" class="p-2 -ml-2 hover:bg-slate-100 rounded-full text-slate-500">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        <header class="header">
+            <button onclick="showMenu()" class="btn" style="color: var(--text-muted);" aria-label="Back to Menu">
+                <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </button>
-            
-            <h1 id="game-header-title" class="text-sm font-bold text-slate-800 uppercase tracking-widest">
-                <!-- Title injected here -->
-            </h1>
-
-            <button onclick="togglePause()" class="p-2 -mr-2 hover:bg-slate-100 rounded-full text-slate-500">
-                <svg id="pause-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h1 id="game-header-title" class="text-sm font-bold uppercase tracking-wider"></h1>
+            <button onclick="togglePause()" class="btn" style="color: var(--text-muted);" aria-label="Pause Game">
+                <svg id="pause-icon" style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
-        </div>
+        </header>
 
         <!-- Status Bar -->
-        <div class="px-4 py-3 bg-slate-100 flex items-center justify-between shadow-inner shrink-0">
+        <div class="status-bar">
              <div class="flex items-center gap-2">
-                 <span data-key="mistakes" class="text-xs font-bold text-slate-500 uppercase">Hatalar</span>
-                 <div id="mistakes-container" class="bg-white px-2 py-1 rounded-md text-sm font-mono font-bold border border-slate-200">
+                 <span data-key="mistakes" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Hatalar</span>
+                 <div id="mistakes-container" class="font-mono font-bold text-sm px-2 py-1" style="background: white; border-radius: 4px; border: 1px solid var(--border);">
                      <span id="mistake-count">0</span>/3
                  </div>
              </div>
-
              <div class="flex items-center gap-2">
-                 <span data-key="time" class="text-xs font-bold text-slate-500 uppercase">Süre</span>
-                 <div class="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm font-mono font-bold shadow-sm">
+                 <span data-key="time" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Süre</span>
+                 <div class="font-mono font-bold text-sm px-3 py-1" style="background: var(--primary); color: white; border-radius: 4px;">
                      <span id="timer-display">00:00</span>
                  </div>
              </div>
         </div>
 
-        <!-- Main Game Area -->
-        <div class="flex-1 flex flex-col items-center justify-start p-4 w-full max-w-lg mx-auto overflow-y-auto no-scrollbar">
-            
-            <!-- Board -->
-            <div id="board-container" class="w-full aspect-square bg-slate-800 p-1 rounded-xl shadow-2xl mb-6 transition-all duration-300">
-                <div id="sudoku-grid" class="grid grid-cols-9 grid-rows-9 bg-slate-300 border-2 border-indigo-900 h-full w-full rounded-lg overflow-hidden bg-white"></div>
+        <!-- Board Area -->
+        <div class="flex-1 flex flex-col items-center justify-start p-4" style="overflow-y: auto;">
+            <div id="board-container" class="sudoku-container" role="grid" aria-label="Sudoku Board">
+                <div id="sudoku-grid" class="grid-9x9"></div>
             </div>
 
-            <!-- Controls -->
-            <div id="controls-container" class="w-full space-y-4 pb-4">
-                <div class="grid grid-cols-6 gap-1">
-                     <!-- Undo -->
-                     <button onclick="undo()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
-                        <span data-key="undo" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">Geri</span>
+            <!-- Controls (5 Buttons Grid) -->
+            <div class="w-full" style="max-width: 28rem;">
+                <div class="controls-grid">
+                     <button onclick="undo()" class="control-btn" aria-label="Undo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                        <span data-key="undo">Geri</span>
                     </button>
-
-                    <!-- Reset -->
-                     <button onclick="resetGame()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span data-key="reset" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">Sıfırla</span>
+                     <button onclick="resetGame()" class="control-btn" aria-label="Reset">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span data-key="reset">Sıfırla</span>
                     </button>
-
-                    <!-- Notes -->
-                    <button id="btn-notes" onclick="toggleNotes()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 transition-all hover:bg-white hover:shadow-sm active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        <span data-key="notes" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">Notlar</span>
+                    <button id="btn-notes" onclick="toggleNotes()" class="control-btn" aria-label="Toggle Notes">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        <span data-key="notes">Notlar</span>
                     </button>
-                    
-                    <!-- Erase -->
-                    <button onclick="handleErase()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        <span data-key="erase" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">Sil</span>
+                    <button onclick="handleErase()" class="control-btn" style="color: var(--error);" aria-label="Erase Cell">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <span data-key="erase">Sil</span>
                     </button>
-
-                     <!-- Hint -->
-                     <button id="btn-hint" onclick="findSmartHint()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 hover:bg-white hover:text-yellow-500 hover:shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:text-slate-500 disabled:hover:bg-transparent disabled:hover:shadow-none">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        <span id="label-hint" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">İpucu (1)</span>
-                    </button>
-
-                    <!-- Check -->
-                    <button onclick="checkBoard()" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-500 hover:bg-white hover:text-emerald-600 hover:shadow-sm transition-all active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span data-key="check" class="text-[8px] font-bold uppercase tracking-wide truncate w-full text-center">Kontrol</span>
+                     <button id="btn-hint" onclick="findSmartHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        <span id="label-hint">İpucu (1)</span>
                     </button>
                 </div>
 
-                <!-- Numpad -->
-                <div class="grid grid-cols-9 gap-1 sm:gap-2">
-                    <div id="numpad-container" class="contents"></div>
-                </div>
+                <div class="numpad-grid" id="numpad-container"></div>
             </div>
         </div>
     </div>
 
-    <!-- ================= MODAL: WINNER ================= -->
-    <div id="winner-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-[fadeIn_0.3s_ease-out]">
-            <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-600 shadow-inner">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
-            </div>
-            <h2 data-key="solved" class="text-3xl font-black text-slate-800 mb-2">ÇÖZÜLDÜ!</h2>
-            <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
-                <p data-key="finalTime" class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Süre</p>
-                <p id="final-time-display" class="text-3xl font-mono font-bold text-indigo-600">0:00</p>
-            </div>
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="modal-icon" style="width: 4rem; height: 4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;"></div>
+            <h2 id="modal-title" class="text-3xl font-bold" style="color: var(--text-main); margin-bottom: 0.5rem;"></h2>
+            <p id="modal-desc" class="text-sm" style="color: var(--text-muted); margin-bottom: 1.5rem;"></p>
             
-            <div class="space-y-3">
-                <button onclick="showMenu()" data-key="mainMenu" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                    Ana Menü
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: GAME OVER ================= -->
-    <div id="game-over-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-[fadeIn_0.3s_ease-out]">
-            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 shadow-inner">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </div>
-            <h2 data-key="gameOver" class="text-3xl font-black text-slate-800 mb-2">OYUN BİTTİ</h2>
-            <p data-key="tooManyMistakes" class="text-slate-500 mb-6">Çok fazla hata!</p>
-            
-            <div class="space-y-3">
-                <button onclick="restartSameLevel()" data-key="tryAgain" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                    Tekrar Dene
-                </button>
-                <button onclick="showMenu()" data-key="menu" class="w-full py-3.5 bg-white border-2 border-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all">
-                    Menü
-                </button>
+            <div class="flex flex-col gap-2">
+                <button id="modal-primary-btn" class="btn btn-primary p-4 font-bold w-full" style="border-radius: 0.75rem;"></button>
+                <button onclick="showMenu()" data-key="mainMenu" class="btn p-3 font-bold w-full" style="background: white; border: 2px solid var(--border); border-radius: 0.75rem; color: var(--text-muted);">Menü</button>
             </div>
         </div>
     </div>
 
     <script>
-        /* ==========================================================================
-           WEB WORKER CODE (GENERATION ENGINE)
-           This script is turned into a Blob and run in a separate thread.
-           ========================================================================== */
+        /* WORKER CODE AS STRING */
         const workerScript = `
             const BLANK = 0;
-
             function createSeededRandom(seedStr) {
                 let h = 2166136261 >>> 0;
-                for (let i = 0; i < seedStr.length; i++) {
-                    h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
-                }
+                for (let i = 0; i < seedStr.length; i++) h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
                 return function() {
-                    let t = h += 0x6D2B79F5;
-                    t = Math.imul(t ^ t >>> 15, t | 1);
-                    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-                    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                    let t = h += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1);
+                    t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296;
                 }
             }
-
             function isValid(bd, row, col, num) {
                 for (let x = 0; x < 9; x++) if (bd[row][x] === num && x !== col) return false;
                 for (let x = 0; x < 9; x++) if (bd[x][col] === num && x !== row) return false;
-                const startRow = 3 * Math.floor(row / 3);
-                const startCol = 3 * Math.floor(col / 3);
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (bd[startRow + i][startCol + j] === num && (startRow + i !== row || startCol + j !== col)) return false;
-                    }
-                }
+                const sr = 3 * Math.floor(row/3), sc = 3 * Math.floor(col/3);
+                for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (bd[sr+i][sc+j] === num && (sr+i !== row || sc+j !== col)) return false;
                 return true;
             }
-
-            function solveSudoku(bd, randomFunc = Math.random) {
-                for (let row = 0; row < 9; row++) {
-                    for (let col = 0; col < 9; col++) {
-                        if (bd[row][col] === BLANK) {
-                            const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-                                .map(value => ({ value, sort: randomFunc() }))
-                                .sort((a, b) => a.sort - b.sort)
-                                .map(({ value }) => value);
-                            
-                            for (let num of nums) {
-                                if (isValid(bd, row, col, num)) {
-                                    bd[row][col] = num;
-                                    if (solveSudoku(bd, randomFunc)) return true;
-                                    bd[row][col] = BLANK;
+            function solveSudoku(bd, rand) {
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        if (bd[r][c] === BLANK) {
+                            const nums = [1,2,3,4,5,6,7,8,9].map(v => ({v, s: rand()})).sort((a,b)=>a.s-b.s).map(o=>o.v);
+                            for (let n of nums) {
+                                if (isValid(bd, r, c, n)) {
+                                    bd[r][c] = n;
+                                    if (solveSudoku(bd, rand)) return true;
+                                    bd[r][c] = BLANK;
                                 }
                             }
                             return false;
@@ -319,750 +469,597 @@
                 }
                 return true;
             }
-
-            function findEmpty(bd) {
-                for (let r = 0; r < 9; r++) {
-                    for (let c = 0; c < 9; c++) {
-                        if (bd[r][c] === BLANK) return [r, c];
-                    }
-                }
-                return null;
-            }
-
-            function countSolutions(bd, limit = 2) {
+            function countSolutions(bd, limit) {
                 let count = 0;
-                function solve(board) {
+                function solve(b) {
                     if (count >= limit) return;
-                    const empty = findEmpty(board);
-                    if (!empty) {
-                        count++;
-                        return;
-                    }
-                    const [r, c] = empty;
-                    for (let num = 1; num <= 9; num++) {
-                        if (isValid(board, r, c, num)) {
-                            board[r][c] = num;
-                            solve(board);
-                            board[r][c] = BLANK;
-                            if (count >= limit) return;
-                        }
+                    let empty = null;
+                    for(let r=0;r<9;r++){ for(let c=0;c<9;c++){ if(b[r][c]===BLANK){ empty=[r,c]; break;} } if(empty) break; }
+                    if (!empty) { count++; return; }
+                    const [r,c] = empty;
+                    for(let n=1;n<=9;n++) {
+                        if(isValid(b,r,c,n)) { b[r][c]=n; solve(b); b[r][c]=BLANK; if(count>=limit) return; }
                     }
                 }
                 solve(bd);
                 return count;
             }
-
-            function generatePuzzle(diff, seedCode) {
-                const rng = seedCode ? createSeededRandom(seedCode) : Math.random;
+            function generatePuzzle(diff, seed) {
+                const rng = seed ? createSeededRandom(seed) : Math.random;
+                const sol = Array.from({length:9},()=>Array(9).fill(BLANK));
+                solveSudoku(sol, rng);
+                const puz = sol.map(r=>[...r]);
+                let keep = 42;
+                if(diff==='Medium') keep=35; if(diff==='Hard') keep=28; if(diff==='Extreme') keep=24;
                 
-                // 1. Full Solution
-                const solution = Array.from({ length: 9 }, () => Array(9).fill(BLANK));
-                solveSudoku(solution, rng);
+                let pos=[]; for(let r=0;r<9;r++) for(let c=0;c<9;c++) pos.push([r,c]);
+                for(let i=pos.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [pos[i],pos[j]]=[pos[j],pos[i]]; }
                 
-                const puzzle = solution.map(row => [...row]);
-                
-                // Clues to keep based on difficulty (Standardized)
-                let cluesToKeep = 42; 
-                if (diff === 'Medium') cluesToKeep = 35;
-                if (diff === 'Hard') cluesToKeep = 28;
-                if (diff === 'Extreme') cluesToKeep = 24;
-
-                let positions = [];
-                for(let r=0; r<9; r++) {
-                    for(let c=0; c<9; c++) {
-                        positions.push([r,c]);
-                    }
+                let clues = 81;
+                for(let [r,c] of pos) {
+                    if(clues <= keep) break;
+                    const val = puz[r][c]; puz[r][c]=BLANK;
+                    const copy = puz.map(row=>[...row]);
+                    if(countSolutions(copy, 2) !== 1) puz[r][c]=val;
+                    else clues--;
                 }
-                
-                // Shuffle positions
-                for (let i = positions.length - 1; i > 0; i--) {
-                    const j = Math.floor(rng() * (i + 1));
-                    [positions[i], positions[j]] = [positions[j], positions[i]];
-                }
-
-                let currentClues = 81;
-                
-                for (let [r, c] of positions) {
-                    if (currentClues <= cluesToKeep) break;
-                    
-                    const removedVal = puzzle[r][c];
-                    puzzle[r][c] = BLANK;
-                    
-                    const boardCopy = puzzle.map(row => [...row]);
-                    const solutions = countSolutions(boardCopy, 2);
-                    
-                    if (solutions !== 1) {
-                        puzzle[r][c] = removedVal; // Ambiguous, put back
-                    } else {
-                        currentClues--;
-                    }
-                }
-
-                return { puzzle, solution };
+                return { puzzle: puz, solution: sol };
             }
-
-            self.onmessage = function(e) {
-                const { difficulty, seedCode } = e.data;
-                const result = generatePuzzle(difficulty, seedCode);
-                self.postMessage(result);
-            };
+            self.onmessage = e => { self.postMessage(generatePuzzle(e.data.difficulty, e.data.seedCode)); };
         `;
 
-        // --- TRANSLATIONS ---
+        // TRANSLATIONS
         const i18n = {
             en: {
-                subtitle: "Challenge Yourself or a Friend",
-                difficulty: "Difficulty",
-                singlePlayer: "Single Player",
-                justPlay: "Just Play",
-                competitive: "Or Play Competitive",
-                gameCode: "Game Code",
-                codeDesc: "Enter the same code as your friend to play the <strong>exact same board</strong>.",
-                enterCode: "ENTER CODE",
-                mistakes: "Mistakes",
-                time: "Time",
-                undo: "Undo",
-                reset: "Reset",
-                notes: "Notes",
-                erase: "Erase",
-                hint: "Hint",
-                check: "Check",
-                solved: "SOLVED!",
-                finalTime: "Final Time",
-                mainMenu: "Main Menu",
-                gameOver: "GAME OVER",
-                tooManyMistakes: "Too many mistakes!",
-                tryAgain: "Try Again",
-                menu: "Menu",
-                confirmReset: "Reset the board to start?",
-                perfect: "Perfect so far!",
-                boardFull: "No logical singles found!",
-                cellCorrect: "Cell is already correct!",
-                noHints: "No hints left!",
-                generating: "Generating...",
-                diffEasy: "Easy",
-                diffMedium: "Medium",
-                diffHard: "Hard",
-                diffExtreme: "Extreme"
+                subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game"
             },
             tr: {
-                subtitle: "Meydan Oku",
-                difficulty: "Zorluk",
-                singlePlayer: "Tek Oyunculu",
-                justPlay: "Hemen Oyna",
-                competitive: "Rekabetçi Mod",
-                gameCode: "Oyun Kodu",
-                codeDesc: "Arkadaşınızla <strong>aynı tahtada</strong> oynamak için aynı kodu girin.",
-                enterCode: "KOD",
-                mistakes: "Hatalar",
-                time: "Süre",
-                undo: "Geri",
-                reset: "Sıfırla",
-                notes: "Notlar",
-                erase: "Sil",
-                hint: "İpucu",
-                check: "Kontrol",
-                solved: "ÇÖZÜLDÜ!",
-                finalTime: "Süre",
-                mainMenu: "Ana Menü",
-                gameOver: "OYUN BİTTİ",
-                tooManyMistakes: "Çok fazla hata!",
-                tryAgain: "Tekrar Dene",
-                menu: "Menü",
-                confirmReset: "Tahtayı sıfırlamak istiyor musun?",
-                perfect: "Şimdilik mükemmel!",
-                boardFull: "Mantiksal hamle bulunamadı!",
-                cellCorrect: "Hücre zaten doğru!",
-                noHints: "İpucu hakkınız kalmadı!",
-                generating: "Oluşturuluyor...",
-                diffEasy: "Kolay",
-                diffMedium: "Orta",
-                diffHard: "Zor",
-                diffExtreme: "Uzman"
+                subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et"
             }
         };
 
-        let currentLang = 'tr'; 
-
-        // --- GAME STATE ---
+        let currentLang = 'tr';
         const BLANK = 0;
-        let board = [];
-        let initialBoard = [];
-        let solution = [];
-        let notes = {}; 
-        let historyStack = [];
-        
-        let difficulty = 'Medium';
-        let currentCode = null;
-        
-        let timer = 0;
-        let timerInterval = null;
-        let isPaused = false;
-        let isGameComplete = false;
-        
-        let selectedCell = null; 
-        let notesMode = false;
-        
-        let mistakes = 0;
-        const MAX_MISTAKES = 3;
-        
-        let hintsLeft = 1;
-        let currentHintData = null; 
+        let board = [], initialBoard = [], solution = [], notes = {}, historyStack = [];
+        let difficulty = 'Medium', currentCode = null, timer = 0, timerInterval = null;
+        let isPaused = false, isGameComplete = false, selectedCell = null, notesMode = false;
+        let mistakes = 0; const MAX_MISTAKES = 3;
+        let hintsLeft = 1; let currentHintData = null;
+        let lastInputTime = 0;
 
-        // --- INITIALIZATION ---
+        // Validation Logic (needed on main thread for hints/input)
+        function isValid(bd, r, c, n) {
+            for(let x=0;x<9;x++) if(bd[r][x]===n && x!==c) return false;
+            for(let x=0;x<9;x++) if(bd[x][c]===n && x!==r) return false;
+            const sr=3*Math.floor(r/3), sc=3*Math.floor(c/3);
+            for(let i=0;i<3;i++) for(let j=0;j<3;j++) if(bd[sr+i][sc+j]===n && (sr+i!==r || sc+j!==c)) return false;
+            return true;
+        }
+
         window.onload = function() {
             setLanguage('tr'); 
-            renderDifficultyButtons();
+            renderDifficultyButtons(); 
             renderNumpad();
+            checkSavedGame();
+            
+            // Set Daily Date
+            const today = new Date();
+            document.getElementById('daily-date-display').innerText = today.toLocaleDateString();
         };
 
         function setLanguage(lang) {
             currentLang = lang;
             const t = i18n[lang];
-
             const btnTr = document.getElementById('lang-tr');
             const btnEn = document.getElementById('lang-en');
             
             if (lang === 'tr') {
-                btnTr.className = "px-3 py-1 rounded-full text-xs font-bold transition-all bg-indigo-600 text-white shadow-md";
-                btnEn.className = "px-3 py-1 rounded-full text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all";
+                btnTr.style.background = 'var(--primary)'; btnTr.style.color = 'white';
+                btnEn.style.background = 'transparent'; btnEn.style.color = 'var(--text-muted)';
             } else {
-                btnEn.className = "px-3 py-1 rounded-full text-xs font-bold transition-all bg-indigo-600 text-white shadow-md";
-                btnTr.className = "px-3 py-1 rounded-full text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all";
+                btnEn.style.background = 'var(--primary)'; btnEn.style.color = 'white';
+                btnTr.style.background = 'transparent'; btnTr.style.color = 'var(--text-muted)';
             }
 
             document.querySelectorAll('[data-key]').forEach(el => {
                 const key = el.getAttribute('data-key');
                 if (t[key]) el.innerHTML = t[key];
             });
-
             document.getElementById('game-code-input').placeholder = t.enterCode;
-            renderDifficultyButtons();
-            updateHintButton();
+            renderDifficultyButtons(); updateHintButton();
         }
 
-        function getText(key) {
-            return i18n[currentLang][key] || key;
-        }
-
-        // --- HELPER LOGIC FOR UI (Validation) ---
-        // Duplicated here because we need it for immediate UI checks like Smart Hint finding
-        function isValid(bd, row, col, num) {
-            for (let x = 0; x < 9; x++) if (bd[row][x] === num && x !== col) return false;
-            for (let x = 0; x < 9; x++) if (bd[x][col] === num && x !== row) return false;
-            const startRow = 3 * Math.floor(row / 3);
-            const startCol = 3 * Math.floor(col / 3);
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (bd[startRow + i][startCol + j] === num && (startRow + i !== row || startCol + j !== col)) return false;
-                }
-            }
-            return true;
-        }
+        function getText(key) { return i18n[currentLang][key] || key; }
 
         function renderDifficultyButtons() {
             const container = document.getElementById('difficulty-buttons');
             const levels = ['Easy', 'Medium', 'Hard', 'Extreme'];
-            const labels = {
-                'Easy': getText('diffEasy'),
-                'Medium': getText('diffMedium'),
-                'Hard': getText('diffHard'),
-                'Extreme': getText('diffExtreme')
-            };
-
+            const labels = { 'Easy': getText('diffEasy'), 'Medium': getText('diffMedium'), 'Hard': getText('diffHard'), 'Extreme': getText('diffExtreme') };
             container.innerHTML = levels.map(d => `
-                <button onclick="setDifficulty('${d}')" 
-                    class="py-2 px-1 rounded-lg text-xs sm:text-sm font-bold transition-all ${difficulty === d ? 'bg-indigo-600 text-white shadow-md transform scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}"
-                >
-                    ${labels[d]}
-                </button>
+                <button onclick="setDifficulty('${d}')" class="btn ${difficulty === d ? 'btn-primary' : ''}" style="padding: 0.5rem; font-size: 0.75rem; font-weight: bold; border-radius: 0.5rem; background: ${difficulty === d ? 'var(--primary)' : '#f1f5f9'}; color: ${difficulty === d ? '#fff' : '#64748b'};">${labels[d]}</button>
             `).join('');
         }
 
         function renderNumpad() {
-            const container = document.getElementById('numpad-container');
-            let html = '';
-            for(let i=1; i<=9; i++) {
-                html += `
-                    <button onclick="handleInput(${i})" class="aspect-[4/5] bg-white rounded-xl shadow-[0_2px_0_0_rgba(0,0,0,0.05)] border-b-2 border-slate-100 text-2xl font-bold text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center select-none touch-manipulation">
-                        ${i}
-                    </button>
-                `;
-            }
-            container.innerHTML = html;
+            document.getElementById('numpad-container').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => `
+                <button onclick="handleInput(${i})" class="btn num-btn" aria-label="Enter number ${i}">${i}</button>
+            `).join('');
         }
 
-        function setDifficulty(d) {
-            difficulty = d;
-            renderDifficultyButtons();
-        }
-
+        function setDifficulty(d) { difficulty = d; renderDifficultyButtons(); }
+        
         function generateRandomCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let result = '';
-            for (let i = 0; i < 5; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let r = ''; for(let i=0;i<5;i++) r += c.charAt(Math.floor(Math.random()*c.length));
+            document.getElementById('game-code-input').value = r;
+        }
+
+        /* --- PERSISTENCE --- */
+        const SAVE_KEY = 'sudoku_master_save_v1';
+
+        function saveStateToStorage() {
+            if(isGameComplete) { localStorage.removeItem(SAVE_KEY); return; }
+            const state = {
+                board, initialBoard, solution, notes, mistakes,
+                difficulty, currentCode, timer, historyStack, hintsLeft
+            };
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        }
+
+        function checkSavedGame() {
+            const saved = localStorage.getItem(SAVE_KEY);
+            if(saved) {
+                document.getElementById('btn-continue').classList.remove('hidden');
+                document.getElementById('btn-continue').classList.add('flex');
             }
-            document.getElementById('game-code-input').value = result;
+        }
+
+        function loadSavedGame() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+                if(!saved) return;
+                
+                board = saved.board; initialBoard = saved.initialBoard; solution = saved.solution;
+                notes = saved.notes || {}; mistakes = saved.mistakes || 0;
+                difficulty = saved.difficulty; currentCode = saved.currentCode;
+                timer = saved.timer || 0; historyStack = saved.historyStack || [];
+                hintsLeft = saved.hintsLeft;
+
+                // Resume Game UI
+                isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null;
+                document.getElementById('menu-view').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                document.getElementById('game-view').classList.add('flex');
+                
+                let t = difficulty;
+                if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
+                if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
+                document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : t;
+                
+                updateUI();
+                renderBoard();
+                startTimer();
+            } catch(e) { console.error("Save file corrupt", e); localStorage.removeItem(SAVE_KEY); }
+        }
+
+        function startDailyChallenge() {
+            // Generate DAILY-YYYYMMDD code
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const dailyCode = `DAILY-${yyyy}${mm}${dd}`;
+
+            document.getElementById('game-code-input').value = dailyCode;
+            
+            // Set Difficulty to Hard specifically for daily challenge to keep it consistent
+            setDifficulty('Hard');
+
+            startGame(true);
         }
 
         function startGame(useCode) {
-            // UI Feedback
             document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-daily').classList.add('hidden'); // Hide daily button too
+            document.getElementById('btn-continue').classList.add('hidden');
             document.getElementById('loading-start').classList.remove('hidden');
+            document.getElementById('loading-start').style.display = 'flex';
 
             const inputVal = document.getElementById('game-code-input').value.toUpperCase();
-            
-            if (useCode) {
-                if(!inputVal) {
-                    generateRandomCode();
-                    currentCode = document.getElementById('game-code-input').value;
-                } else {
-                    currentCode = inputVal;
-                }
-            } else {
-                currentCode = null;
-            }
+            currentCode = useCode ? (inputVal || (generateRandomCode(), document.getElementById('game-code-input').value)) : null;
 
-            // --- WORKER GENERATION START ---
             const blob = new Blob([workerScript], { type: 'application/javascript' });
             const worker = new Worker(URL.createObjectURL(blob));
 
             worker.onmessage = function(e) {
                 const data = e.data;
-                
                 initialBoard = data.puzzle.map(r => [...r]);
                 board = data.puzzle.map(r => [...r]);
                 solution = data.solution;
                 
-                // Reset State
-                timer = 0;
-                isPaused = false;
-                isGameComplete = false;
-                selectedCell = null;
-                currentHintData = null;
-                notes = {};
-                notesMode = false;
-                mistakes = 0;
-                historyStack = [];
-                hintsLeft = 1;
+                timer = 0; isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null;
+                notes = {}; notesMode = false; mistakes = 0; historyStack = []; hintsLeft = 1;
                 
-                updateNotesUI();
-                updateMistakesUI();
-                updateHintButton();
+                saveStateToStorage(); // Save initial state
+                updateUI();
                 
-                // Switch View
                 document.getElementById('btn-start').classList.remove('hidden');
+                document.getElementById('btn-daily').classList.remove('hidden');
                 document.getElementById('loading-start').classList.add('hidden');
+                document.getElementById('loading-start').style.display = 'none';
                 document.getElementById('menu-view').classList.add('hidden');
                 document.getElementById('game-view').classList.remove('hidden');
                 document.getElementById('game-view').classList.add('flex');
-                document.getElementById('winner-modal').classList.add('hidden');
-                document.getElementById('game-over-modal').classList.add('hidden');
+                document.getElementById('modal-overlay').classList.add('hidden');
                 
-                const titleEl = document.getElementById('game-header-title');
-                if (currentCode) {
-                    titleEl.innerHTML = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-mono tracking-wider border border-indigo-200">#${currentCode}</span>`;
-                } else {
-                    let diffText = difficulty;
-                    if(difficulty === 'Easy') diffText = getText('diffEasy');
-                    if(difficulty === 'Medium') diffText = getText('diffMedium');
-                    if(difficulty === 'Hard') diffText = getText('diffHard');
-                    if(difficulty === 'Extreme') diffText = getText('diffExtreme');
-                    titleEl.innerText = diffText;
-                }
+                let t = difficulty;
+                if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
+                if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
+                document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : t;
 
                 renderBoard();
                 startTimer();
-                worker.terminate(); // Kill worker to save memory
+                worker.terminate();
             };
-
-            // Trigger worker
             worker.postMessage({ difficulty, seedCode: currentCode });
-            // --- WORKER GENERATION END ---
-        }
-        
-        function restartSameLevel() {
-            startGame(!!currentCode);
         }
 
-        function resetGame() {
-            if(!confirm(getText('confirmReset'))) return;
-            saveState();
-            board = initialBoard.map(r => [...r]);
-            notes = {};
-            currentHintData = null;
-            hintsLeft = 1; 
-            updateHintButton();
-            renderBoard();
-        }
-
-        function showMenu() {
-            stopTimer();
-            document.getElementById('game-view').classList.add('hidden');
-            document.getElementById('game-view').classList.remove('flex');
-            document.getElementById('menu-view').classList.remove('hidden');
-            document.getElementById('winner-modal').classList.add('hidden');
-            document.getElementById('game-over-modal').classList.add('hidden');
-        }
-
-        function startTimer() {
-            stopTimer();
-            timerInterval = setInterval(() => {
-                timer++;
-                const mins = Math.floor(timer / 60);
-                const secs = timer % 60;
-                document.getElementById('timer-display').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            const container = document.getElementById('board-container');
-            const controls = document.getElementById('controls-container');
+        function updateUI() {
+            const noteBtn = document.getElementById('btn-notes');
+            if(notesMode) { noteBtn.classList.add('active'); } else { noteBtn.classList.remove('active'); }
             
-            if(isPaused) {
-                stopTimer();
-                container.classList.add('blur-md', 'opacity-50', 'pointer-events-none');
-                controls.classList.add('invisible');
-            } else {
-                startTimer();
-                container.classList.remove('blur-md', 'opacity-50', 'pointer-events-none');
-                controls.classList.remove('invisible');
-            }
-        }
-
-        function saveState() {
-            if (historyStack.length > 50) historyStack.shift();
-            historyStack.push({
-                board: JSON.parse(JSON.stringify(board)),
-                notes: JSON.parse(JSON.stringify(notes)),
-                mistakes: mistakes
-            });
-        }
-
-        function undo() {
-            if (historyStack.length === 0 || isGameComplete || isPaused) return;
-            const state = historyStack.pop();
-            board = state.board;
-            notes = state.notes;
-            currentHintData = null;
-            renderBoard();
+            const mContainer = document.getElementById('mistakes-container');
+            document.getElementById('mistake-count').innerText = mistakes;
+            if(mistakes>0) { mContainer.style.background='#fef2f2'; mContainer.style.color='var(--error)'; mContainer.style.borderColor='var(--error)'; }
+            else { mContainer.style.background='white'; mContainer.style.color='black'; mContainer.style.borderColor='var(--border)'; }
+            
+            updateHintButton();
         }
 
         function updateHintButton() {
             const btn = document.getElementById('btn-hint');
-            const label = document.getElementById('label-hint');
-            const hintText = getText('hint');
-            
-            label.innerText = `${hintText} (${hintsLeft})`;
-            
-            if (hintsLeft <= 0) {
-                btn.disabled = true;
-            } else {
-                btn.disabled = false;
+            const lbl = document.getElementById('label-hint');
+            lbl.innerText = `${getText('hint')} (${hintsLeft})`;
+            btn.disabled = hintsLeft <= 0;
+            btn.style.opacity = hintsLeft <= 0 ? '0.5' : '1';
+        }
+
+        function restartSameLevel() { startGame(!!currentCode); }
+        function showMenu() {
+            stopTimer();
+            saveStateToStorage();
+            document.getElementById('game-view').classList.add('hidden');
+            document.getElementById('game-view').classList.remove('flex');
+            document.getElementById('menu-view').classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.add('hidden');
+            checkSavedGame();
+        }
+
+        function startTimer() { stopTimer(); timerInterval = setInterval(() => { timer++; const m=Math.floor(timer/60),s=timer%60; document.getElementById('timer-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }, 1000); }
+        function stopTimer() { if (timerInterval) clearInterval(timerInterval); }
+        function togglePause() { isPaused = !isPaused; renderBoard(); if(isPaused) stopTimer(); else startTimer(); }
+
+        function toggleNotes() { notesMode = !notesMode; updateUI(); }
+        function saveState() { if(historyStack.length>30) historyStack.shift(); historyStack.push({b:JSON.parse(JSON.stringify(board)),n:JSON.parse(JSON.stringify(notes)),m:mistakes}); }
+        function undo() {
+            if(!historyStack.length || isGameComplete || isPaused) return;
+            const s = historyStack.pop(); board = s.b; notes = s.n; currentHintData = null; renderBoard(); saveStateToStorage();
+        }
+        function resetGame() { if(confirm(getText('confirmReset'))) { saveState(); board=initialBoard.map(r=>[...r]); notes={}; currentHintData=null; hintsLeft=1; updateUI(); renderBoard(); saveStateToStorage(); } }
+
+        /* --- ADVANCED SOLVING LOGIC (Singles + Locked Candidates) --- */
+        function getStrictCandidates(r, c, currentBoard) {
+            let cands = [];
+            if(currentBoard[r][c] !== BLANK) return [];
+            for(let n=1;n<=9;n++) {
+                if(isValid(currentBoard, r, c, n)) cands.push(n);
             }
+            return cands;
+        }
+
+        // Returns a full map of candidates for the board
+        function getAllCandidatesMap(bd) {
+            let map = Array.from({length:9}, () => Array(9).fill(null));
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    if(bd[r][c] === BLANK) map[r][c] = getStrictCandidates(r, c, bd);
+                }
+            }
+            return map;
         }
 
         function findSmartHint() {
-            if (isGameComplete || isPaused) return;
-            if (hintsLeft <= 0) {
-                alert(getText('noHints'));
-                return;
-            }
-
+            if(isGameComplete || isPaused || hintsLeft<=0) return;
             currentHintData = null;
 
-            // Search for Naked Singles
-            let found = false;
-            for (let r=0; r<9; r++) {
-                if (found) break;
-                for (let c=0; c<9; c++) {
-                    if (board[r][c] === BLANK) {
-                        let validNums = [];
-                        for (let n=1; n<=9; n++) {
-                            if (isValid(board, r, c, n)) validNums.push(n);
+            // Step 1: Initialize full candidate map
+            let candMap = getAllCandidatesMap(board);
+
+            // Step 2: Apply Locked Candidates (Pointing & Claiming) iteratively to reduce candidates
+            // We run this loop to "clean" the notes internally before checking for singles.
+            // This simulates an advanced player's pencil marks.
+            let changed = true;
+            while(changed) {
+                changed = false;
+                // Check Blocks for Pointing Pairs (Type 1)
+                for(let b=0; b<9; b++) {
+                    const sr=Math.floor(b/3)*3, sc=(b%3)*3;
+                    let numPositions = {}; // num -> array of [r,c]
+                    for(let i=0; i<3; i++) for(let j=0; j<3; j++) {
+                        const r=sr+i, c=sc+j;
+                        if(candMap[r][c]) {
+                            candMap[r][c].forEach(n => {
+                                if(!numPositions[n]) numPositions[n] = [];
+                                numPositions[n].push([r,c]);
+                            });
                         }
+                    }
+                    for(let n in numPositions) {
+                        const pos = numPositions[n];
+                        if(pos.length < 2) continue;
                         
-                        if (validNums.length === 1) {
-                            const correctVal = validNums[0];
-                            let blockers = [];
-                            
-                            // Check Row
-                            for(let i=0; i<9; i++) {
-                                if(i !== c && board[r][i] !== BLANK) blockers.push([r, i]);
-                            }
-                            // Check Col
-                            for(let i=0; i<9; i++) {
-                                if(i !== r && board[i][c] !== BLANK) blockers.push([i, c]);
-                            }
-                            // Check Box
-                            const startRow = 3 * Math.floor(r / 3);
-                            const startCol = 3 * Math.floor(c / 3);
-                            for (let i = 0; i < 3; i++) {
-                                for (let j = 0; j < 3; j++) {
-                                    const br = startRow + i;
-                                    const bc = startCol + j;
-                                    if ((br !== r || bc !== c) && board[br][bc] !== BLANK) {
-                                        if (!blockers.some(b => b[0]===br && b[1]===bc)) {
-                                            blockers.push([br, bc]);
-                                        }
-                                    }
+                        // Check if all in same Row
+                        const sameRow = pos.every(p => p[0] === pos[0][0]);
+                        if(sameRow) {
+                            const r = pos[0][0];
+                            for(let c=0; c<9; c++) {
+                                // If column is NOT in this block, remove candidate
+                                if(Math.floor(c/3) !== (b%3) && candMap[r][c] && candMap[r][c].includes(parseInt(n))) {
+                                    candMap[r][c] = candMap[r][c].filter(x => x !== parseInt(n));
+                                    changed = true;
                                 }
                             }
-                            
-                            currentHintData = { target: [r, c], value: correctVal, blockers: blockers };
-                            selectedCell = [r, c];
-                            hintsLeft--;
-                            updateHintButton();
-                            renderBoard();
-                            found = true;
-                            break;
+                        }
+
+                        // Check if all in same Col
+                        const sameCol = pos.every(p => p[1] === pos[0][1]);
+                        if(sameCol) {
+                            const c = pos[0][1];
+                            for(let r=0; r<9; r++) {
+                                if(Math.floor(r/3) !== Math.floor(b/3) && candMap[r][c] && candMap[r][c].includes(parseInt(n))) {
+                                    candMap[r][c] = candMap[r][c].filter(x => x !== parseInt(n));
+                                    changed = true;
+                                }
+                            }
                         }
                     }
                 }
+                // (Could add Claiming Pairs here too, but Pointing is usually enough for 'Extreme' progress)
             }
 
-            if (!found) {
-                 // Fallback
-                 for (let r=0; r<9; r++) {
-                    for (let c=0; c<9; c++) {
-                        if (board[r][c] === BLANK) {
-                            currentHintData = { target: [r, c], value: solution[r][c], blockers: [] };
-                            selectedCell = [r, c];
-                            hintsLeft--;
-                            updateHintButton();
-                            renderBoard();
-                            return;
-                        }
-                    }
-                 }
-                alert(getText('boardFull'));
+            // Step 3: Find Naked Singles in the reduced map
+            for(let r=0; r<9; r++) for(let c=0; c<9; c++) {
+                if(candMap[r][c] && candMap[r][c].length === 1) {
+                    applyHint(r, c, candMap[r][c][0], 'naked');
+                    return;
+                }
             }
+
+            // Step 4: Find Hidden Singles in the reduced map
+            // Rows
+            for(let r=0;r<9;r++) {
+                let counts = {};
+                for(let c=0;c<9;c++) if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
+                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-row'); return; }
+            }
+            // Cols
+            for(let c=0;c<9;c++) {
+                let counts = {};
+                for(let r=0;r<9;r++) if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
+                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-col'); return; }
+            }
+            // Boxes
+            for(let b=0;b<9;b++) {
+                let counts = {};
+                const sr=Math.floor(b/3)*3, sc=(b%3)*3;
+                for(let i=0;i<3;i++) for(let j=0;j<3;j++) {
+                    const r=sr+i, c=sc+j;
+                    if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
+                }
+                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-box'); return; }
+            }
+
+            alert(getText('boardFull'));
+        }
+
+        function applyHint(r, c, val, type) {
+            currentHintData = { target: [r,c], value: val, type: type, region: [] };
+            
+            // Visuals
+            if(type === 'hidden-row') for(let i=0;i<9;i++) currentHintData.region.push([r,i]);
+            else if(type === 'hidden-col') for(let i=0;i<9;i++) currentHintData.region.push([i,c]);
+            else if(type === 'hidden-box') {
+                const sr=Math.floor(r/3)*3, sc=Math.floor(c/3)*3;
+                for(let i=0;i<3;i++) for(let j=0;j<3;j++) currentHintData.region.push([sr+i, sc+j]);
+            }
+
+            selectedCell = [r, c];
+            hintsLeft--;
+            updateHintButton();
+            renderBoard();
+            saveStateToStorage();
         }
 
         function checkBoard() {
-            let errors = 0;
-            for(let i=0; i<9; i++){
-                for(let j=0; j<9; j++){
-                    if(board[i][j] !== BLANK && board[i][j] !== solution[i][j]) {
-                        errors++;
-                    }
-                }
+            let err = 0;
+            for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]!==BLANK && board[r][c]!==solution[r][c]) err++;
+            if(err===0) alert(getText('perfect')); else alert(err + (currentLang==='tr'?' hata':' mistakes'));
+        }
+
+        function showModal(type) {
+            const over = document.getElementById('modal-overlay');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const btn = document.getElementById('modal-primary-btn');
+            
+            over.classList.remove('hidden');
+            if(type === 'win') {
+                localStorage.removeItem(SAVE_KEY); // Clear save on win
+                icon.style.background = '#fef9c3'; icon.innerHTML = '<svg style="width:2rem;height:2rem;color:#ca8a04;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                title.innerText = getText('solved');
+                desc.innerText = `${getText('finalTime')}: ${document.getElementById('timer-display').innerText}`;
+                btn.innerText = getText('mainMenu');
+                btn.onclick = showMenu;
+            } else {
+                localStorage.removeItem(SAVE_KEY); // Clear save on lose
+                icon.style.background = '#fee2e2'; icon.innerHTML = '<svg style="width:2rem;height:2rem;color:#ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                title.innerText = getText('gameOver');
+                desc.innerText = getText('tooManyMistakes');
+                btn.innerText = getText('tryAgain');
+                btn.onclick = restartSameLevel;
             }
-            if(errors === 0) alert(getText('perfect'));
-            else alert(currentLang === 'tr' ? `${errors} hata bulundu.` : `Found ${errors} mistakes.`);
         }
 
         function renderBoard() {
             const grid = document.getElementById('sudoku-grid');
-            let html = '';
+            grid.innerHTML = '';
             
-            for(let r=0; r<9; r++) {
-                for(let c=0; c<9; c++) {
-                    const val = board[r][c];
-                    const isInit = initialBoard[r][c] !== BLANK;
-                    const isSel = selectedCell && selectedCell[0] === r && selectedCell[1] === c;
-                    const correctVal = solution[r][c];
-                    
-                    const isHintTarget = currentHintData && currentHintData.target[0] === r && currentHintData.target[1] === c;
-                    const isHintBlocker = currentHintData && currentHintData.blockers.some(b => b[0] === r && b[1] === c);
-                    
-                    const isError = val !== BLANK && !isInit && val !== correctVal;
+            if(isPaused) {
+                grid.innerHTML = '<div style="grid-column:1/-1;grid-row:1/-1;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#64748b;">PAUSED</div>';
+                return;
+            }
 
-                    let borderClass = 'cell border-gray-300';
-                    if (c === 0) borderClass += ' border-l-2 border-l-indigo-900';
-                    if (r === 0) borderClass += ' border-t-2 border-t-indigo-900';
-                    if (r === 2 || r === 5 || r === 8) borderClass += ' border-b-2 border-b-indigo-900';
-                    if (c === 8) borderClass += ' border-r-2 border-r-indigo-900';
+            for(let r=0;r<9;r++) for(let c=0;c<9;c++) {
+                const val = board[r][c];
+                const init = initialBoard[r][c]!==BLANK;
+                const sel = selectedCell && selectedCell[0]===r && selectedCell[1]===c;
+                const err = val!==BLANK && !init && val!==solution[r][c];
+                
+                const isHintTarget = currentHintData && currentHintData.target[0]===r && currentHintData.target[1]===c;
+                const isHintRegion = currentHintData && currentHintData.region.some(p => p[0]===r && p[1]===c);
 
-                    let bgClass = 'bg-white';
-                    let textClass = 'text-blue-600';
+                const el = document.createElement('div');
+                el.className = 'cell';
+                el.role = 'gridcell';
+                el.tabIndex = 0;
+                // Accessibility Label
+                const posLabel = `Row ${r+1} Col ${c+1}`;
+                const valLabel = val === BLANK ? "Empty" : val;
+                el.setAttribute('aria-label', `${posLabel}, ${valLabel}`);
 
-                    if (isSel) {
-                        bgClass = 'bg-blue-500';
-                        textClass = 'text-white';
-                    } else if (selectedCell) {
-                        const [sr, sc] = selectedCell;
-                        const sVal = board[sr][sc];
-                        if (val !== BLANK && sVal === val) bgClass = 'bg-blue-200';
-                        else if (sr === r || sc === c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) {
-                            bgClass = 'bg-blue-50';
-                        }
-                    }
-                    
-                    if (isInit) {
-                        bgClass = isSel ? 'bg-blue-500' : (bgClass === 'bg-white' ? 'bg-gray-100' : bgClass);
-                        textClass = isSel ? 'text-white' : 'text-slate-900 font-extrabold';
-                    }
-                    
-                    if (isError) {
-                        bgClass = isSel ? 'bg-red-500' : 'bg-red-100';
-                        textClass = isSel ? 'text-white' : 'text-red-500';
-                    }
-
-                    if (isHintTarget) {
-                        bgClass += ' hint-target-pulse';
-                    }
-                    if (isHintBlocker) {
-                        bgClass += ' hint-blocker-pulse';
-                    }
-
-                    let content = val !== BLANK ? val : '';
-                    
-                    if (val === BLANK && isHintTarget && currentHintData) {
-                         content = `<span class="ghost-number">${currentHintData.value}</span>`;
-                    }
-                    else if (val === BLANK) {
-                        const cellNotes = notes[`${r}-${c}`] || [];
-                        if (cellNotes.length > 0) {
-                             content = `<div class="grid grid-cols-3 w-full h-full p-0.5 pointer-events-none">
-                                ${[1,2,3,4,5,6,7,8,9].map(n => 
-                                    `<div class="flex items-center justify-center text-[8px] leading-none ${cellNotes.includes(n) ? 'text-slate-500' : 'invisible'}">${n}</div>`
-                                ).join('')}
-                             </div>`;
-                        }
-                    }
-
-                    html += `<div onclick="selectCell(${r}, ${c})" class="${borderClass} ${bgClass} ${textClass} w-full h-full flex items-center justify-center text-xl sm:text-2xl cursor-pointer select-none transition-colors duration-75 relative">
-                        ${content}
-                    </div>`;
+                // Styles
+                if(c%3===2 && c!==8) el.classList.add('border-r-thick');
+                if(r%3===2 && r!==8) el.classList.add('border-b-thick');
+                
+                if(sel) { el.classList.add('selected'); if(err) el.classList.add('error'); }
+                else if(selectedCell) {
+                    const [sr, sc] = selectedCell;
+                    if(board[sr][sc]!==BLANK && val===board[sr][sc]) el.classList.add('same-val');
+                    else if(sr===r || sc===c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) el.classList.add('related');
                 }
-            }
-            grid.innerHTML = html;
-        }
 
-        function selectCell(r, c) {
-            if (isGameComplete || isPaused) return;
-            selectedCell = [r, c];
-            renderBoard();
-        }
+                if(init) { el.classList.add('initial'); if(sel) el.classList.add('selected'); }
+                else if(err && !sel) el.classList.add('error');
 
-        function toggleNotes() {
-            notesMode = !notesMode;
-            updateNotesUI();
-        }
+                if(isHintTarget) el.classList.add('hint-target');
+                if(isHintRegion && !isHintTarget) el.classList.add('hint-region');
 
-        function updateNotesUI() {
-            const btn = document.getElementById('btn-notes');
-            if (notesMode) {
-                btn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
-                btn.classList.remove('text-slate-500', 'hover:bg-white');
-            } else {
-                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
-                btn.classList.add('text-slate-500', 'hover:bg-white');
-            }
-        }
-
-        function updateMistakesUI() {
-            const el = document.getElementById('mistake-count');
-            const container = document.getElementById('mistakes-container');
-            el.innerText = mistakes;
-            if (mistakes > 0) {
-                container.classList.add('text-red-600', 'bg-red-50', 'border-red-200');
-                container.classList.remove('bg-white', 'border-slate-200');
-            } else {
-                 container.classList.remove('text-red-600', 'bg-red-50', 'border-red-200');
-                 container.classList.add('bg-white', 'border-slate-200');
-            }
-        }
-
-        function handleInput(num) {
-            if (!selectedCell || isGameComplete || isPaused) return;
-            const [r, c] = selectedCell;
-            
-            if (initialBoard[r][c] !== BLANK) return;
-            if (board[r][c] === solution[r][c]) return; 
-
-            saveState();
-
-            // Clear hint visual
-            if (currentHintData) {
-                currentHintData = null;
-            }
-
-            if (notesMode) {
-                const key = `${r}-${c}`;
-                let arr = notes[key] || [];
-                if (arr.includes(num)) arr = arr.filter(n => n !== num);
-                else arr.push(num);
-                notes[key] = arr;
-                renderBoard();
-            } else {
-                if (num !== solution[r][c]) {
-                    mistakes++;
-                    updateMistakesUI();
-                    board[r][c] = num;
-                    renderBoard();
-                    
-                    if (mistakes >= MAX_MISTAKES) {
-                        isGameComplete = true;
-                        stopTimer();
-                        document.getElementById('game-over-modal').classList.remove('hidden');
+                // Content
+                if(val!==BLANK) el.innerText = val;
+                else if(isHintTarget) el.innerHTML = `<span class="ghost-number">${currentHintData.value}</span>`;
+                else {
+                    const n = notes[`${r}-${c}`];
+                    if(n && n.length) {
+                        el.style.display = 'grid'; el.style.gridTemplateColumns='repeat(3,1fr)'; el.style.fontSize='0.5rem'; el.style.lineHeight='1';
+                        for(let k=1;k<=9;k++) {
+                            const s = document.createElement('span');
+                            s.style.display='flex'; s.style.justifyContent='center'; s.style.alignItems='center';
+                            s.innerText = n.includes(k) ? k : '';
+                            s.style.color = '#64748b';
+                            el.appendChild(s);
+                        }
                     }
+                }
+
+                el.onclick = () => { if(!isGameComplete) { selectedCell=[r,c]; currentHintData=null; renderBoard(); } };
+                // Keyboard Nav focus update
+                el.onfocus = () => { if(!isGameComplete) { selectedCell=[r,c]; renderBoard(); } };
+                
+                grid.appendChild(el);
+            }
+        }
+
+        function handleInput(n) {
+            // Debounce to prevent bounce/double triggers on mobile
+            const now = Date.now();
+            if (now - lastInputTime < 150) return; // 150ms lockout
+            lastInputTime = now;
+
+            if(!selectedCell || isGameComplete || isPaused) return;
+            const [r,c] = selectedCell;
+            if(initialBoard[r][c]!==BLANK) return;
+            if(board[r][c]===solution[r][c]) return;
+
+            if(notesMode) {
+                const k = `${r}-${c}`;
+                if(!notes[k]) notes[k]=[];
+                if(notes[k].includes(n)) notes[k]=notes[k].filter(x=>x!==n); else notes[k].push(n);
+                saveStateToStorage();
+            } else {
+                saveState();
+                if(n!==solution[r][c]) {
+                    mistakes++; board[r][c]=n; updateUI(); renderBoard(); saveStateToStorage();
+                    if(mistakes>=MAX_MISTAKES) { isGameComplete=true; stopTimer(); showModal('lose'); }
                 } else {
-                    board[r][c] = num;
-                    renderBoard();
-                    checkWin();
+                    board[r][c]=n; 
+                    // Clear notes in row/col/box
+                    const sr=Math.floor(r/3)*3, sc=Math.floor(c/3)*3;
+                    for(let i=0;i<9;i++) {
+                        if(notes[`${r}-${i}`]) notes[`${r}-${i}`]=notes[`${r}-${i}`].filter(x=>x!==n);
+                        if(notes[`${i}-${c}`]) notes[`${i}-${c}`]=notes[`${i}-${c}`].filter(x=>x!==n);
+                    }
+                    for(let i=0;i<3;i++) for(let j=0;j<3;j++) {
+                        const k=`${sr+i}-${sc+j}`; if(notes[k]) notes[k]=notes[k].filter(x=>x!==n);
+                    }
+                    
+                    let filled=0; for(let i=0;i<9;i++) for(let j=0;j<9;j++) if(board[i][j]!==BLANK) filled++;
+                    saveStateToStorage();
+                    if(filled===81) { isGameComplete=true; stopTimer(); showModal('win'); }
                 }
             }
+            currentHintData=null;
+            renderBoard();
         }
 
         function handleErase() {
-            if (!selectedCell || isGameComplete || isPaused) return;
-            const [r, c] = selectedCell;
-            if (initialBoard[r][c] !== BLANK) return;
-            
+            // Debounce
+            const now = Date.now();
+            if (now - lastInputTime < 150) return;
+            lastInputTime = now;
+
+            if(!selectedCell || isGameComplete || isPaused) return;
+            const [r,c] = selectedCell;
+            if(initialBoard[r][c]!==BLANK) return;
             saveState();
-            board[r][c] = BLANK;
-            notes[`${r}-${c}`] = [];
-            renderBoard();
+            board[r][c]=BLANK; notes[`${r}-${c}`]=[]; currentHintData=null; renderBoard();
+            saveStateToStorage();
         }
 
-        function checkWin() {
-            let filled = 0;
-            let correct = 0;
-            for(let i=0; i<9; i++){
-                for(let j=0; j<9; j++){
-                    if(board[i][j] !== BLANK) {
-                        filled++;
-                        if(board[i][j] === solution[i][j]) correct++;
-                    }
-                }
+        document.addEventListener('keydown', e => {
+            if(!selectedCell || isGameComplete || isPaused) return;
+            const k = e.key;
+            if(k>='1' && k<='9') {
+                e.preventDefault(); 
+                if (document.activeElement) document.activeElement.blur(); 
+                handleInput(parseInt(k));
             }
+            if(k==='Backspace'||k==='Delete') handleErase();
+            if(k==='n'||k==='N') toggleNotes();
+            if(k==='h'||k==='H') findSmartHint();
+            if((e.ctrlKey||e.metaKey) && k==='z') undo();
             
-            if (filled === 81 && correct === 81) {
-                isGameComplete = true;
-                stopTimer();
-                document.getElementById('final-time-display').innerText = document.getElementById('timer-display').innerText;
-                document.getElementById('winner-modal').classList.remove('hidden');
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (!selectedCell || isGameComplete || isPaused) return;
-            const key = e.key;
-            if (key >= '1' && key <= '9') handleInput(parseInt(key));
-            if (key === 'Backspace' || key === 'Delete') handleErase();
-            if (key === 'n') toggleNotes();
-            if (key === 'h') findSmartHint();
-            if (key === 'z' && (e.ctrlKey || e.metaKey)) undo();
-            
-            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) {
-                let [r, c] = selectedCell;
-                if (key === 'ArrowUp') r = Math.max(0, r-1);
-                if (key === 'ArrowDown') r = Math.min(8, r+1);
-                if (key === 'ArrowLeft') c = Math.max(0, c-1);
-                if (key === 'ArrowRight') c = Math.min(8, c+1);
-                selectCell(r, c);
+            let [r,c] = selectedCell;
+            if(k==='ArrowUp') r=Math.max(0,r-1); if(k==='ArrowDown') r=Math.min(8,r+1);
+            if(k==='ArrowLeft') c=Math.max(0,c-1); if(k==='ArrowRight') c=Math.min(8,c+1);
+            if(r!==selectedCell[0]||c!==selectedCell[1]) {
+                selectedCell=[r,c]; renderBoard();
+                // Move focus for screen reader
+                const idx = r*9+c;
+                const cells = document.querySelectorAll('.cell');
+                if(cells[idx]) cells[idx].focus(); 
             }
         });
-
     </script>
 </body>
 </html>
-

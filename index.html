@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -109,11 +109,13 @@
 
         .status-bar {
             background: #f1f5f9;
-            padding: 0.75rem 1rem;
-            display: flex;
-            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* Sol, Orta, Sağ */
+            align-items: center;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
+            gap: 0.5rem;
         }
 
         /* Grid */
@@ -161,13 +163,14 @@
         .border-r-thick { border-right: 2px solid #1e293b !important; }
         
         /* Cell States */
-        .cell.selected { background-color: #3b82f6; color: white; }
+        .cell.selected { background-color: #3b82f6 !important; color: white !important; }
         .cell.related { background-color: #eff6ff; }
-        .cell.same-val { background-color: #bfdbfe; }
+        .cell.same-val { background-color: #93c5fd !important; color: #1e3a8a !important; font-weight: bold; }
         .cell.initial { font-weight: 800; color: #0f172a; background-color: #f1f5f9; }
-        .cell.initial.selected { background-color: #3b82f6; color: white; }
-        .cell.error { background-color: #fee2e2; color: #ef4444; }
-        .cell.selected.error { background-color: #ef4444; color: white; }
+        .cell.initial.selected { background-color: #3b82f6 !important; color: white !important; }
+        .cell.initial.same-val { background-color: #93c5fd !important; color: #0f172a !important; }
+        .cell.error { background-color: #fee2e2 !important; color: #ef4444 !important; }
+        .cell.selected.error { background-color: #ef4444 !important; color: white !important; }
 
         /* Hint Styles */
         .hint-target { animation: pulse-green 2s infinite; background-color: #f0fdf4 !important; }
@@ -221,8 +224,11 @@
             font-size: 1.5rem;
             font-weight: 700;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s;
         }
         .num-btn:active { transform: translateY(2px); border-bottom: none; }
+        .num-btn.active-input { background-color: var(--primary); color: white; border-color: var(--primary-hover); transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .num-btn.completed { opacity: 0.2; pointer-events: none; background: #e2e8f0; color: #94a3b8; border: none; box-shadow: none; }
 
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -369,15 +375,20 @@
         <!-- Status Bar -->
         <div class="status-bar">
              <div class="flex items-center gap-2">
-                 <span data-key="mistakes" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Hatalar</span>
-                 <div id="mistakes-container" class="font-mono font-bold text-sm px-2 py-1" style="background: white; border-radius: 4px; border: 1px solid var(--border);">
-                     <span id="mistake-count">0</span>/3
-                 </div>
+                 <span data-key="difficulty" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Zorluk</span>
+                 <span id="game-difficulty-display" class="font-bold text-sm" style="color: var(--primary);"></span>
              </div>
-             <div class="flex items-center gap-2">
-                 <span data-key="time" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Süre</span>
+             
+             <div class="flex items-center justify-center">
                  <div class="font-mono font-bold text-sm px-3 py-1" style="background: var(--primary); color: white; border-radius: 4px;">
                      <span id="timer-display">00:00</span>
+                 </div>
+             </div>
+
+             <div class="flex items-center gap-2 justify-end">
+                 <span data-key="mistakes" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Hata</span>
+                 <div id="mistakes-container" class="font-mono font-bold text-sm px-2 py-1" style="background: white; border-radius: 4px; border: 1px solid var(--border);">
+                     <span id="mistake-count">0</span>/3
                  </div>
              </div>
         </div>
@@ -407,7 +418,7 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         <span data-key="erase">Sil</span>
                     </button>
-                     <button id="btn-hint" onclick="findSmartHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
+                     <button id="btn-hint" onclick="requestHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                         <span id="label-hint">İpucu (1)</span>
                     </button>
@@ -427,6 +438,9 @@
             
             <div class="flex flex-col gap-2">
                 <button id="modal-primary-btn" class="btn btn-primary p-4 font-bold w-full" style="border-radius: 0.75rem;"></button>
+                
+                <button id="modal-review-btn" onclick="reviewBoard()" data-key="reviewBoard" class="hidden btn p-3 font-bold w-full" style="background: #f1f5f9; border: 2px solid var(--border); border-radius: 0.75rem; color: var(--text-main);">Tahtayı İncele</button>
+                
                 <button onclick="showMenu()" data-key="mainMenu" class="btn p-3 font-bold w-full" style="background: white; border: 2px solid var(--border); border-radius: 0.75rem; color: var(--text-muted);">Menü</button>
             </div>
         </div>
@@ -511,10 +525,10 @@
         // TRANSLATIONS
         const i18n = {
             en: {
-                subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game"
+                subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game", reviewBoard: "Review Board"
             },
             tr: {
-                subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et"
+                subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et", reviewBoard: "Tahtayı İncele"
             }
         };
 
@@ -523,8 +537,9 @@
         let board = [], initialBoard = [], solution = [], notes = {}, historyStack = [];
         let difficulty = 'Medium', currentCode = null, timer = 0, timerInterval = null;
         let isPaused = false, isGameComplete = false, selectedCell = null, notesMode = false;
+        let selectedNumberInput = null; // New: For "Input First" mode
         let mistakes = 0; const MAX_MISTAKES = 3;
-        let hintsLeft = 1; let currentHintData = null;
+        let hintsLeft = 3; let currentHintData = null; // Increased hints for testing
         let lastInputTime = 0;
 
         // Validation Logic (needed on main thread for hints/input)
@@ -539,7 +554,7 @@
         window.onload = function() {
             setLanguage('tr'); 
             renderDifficultyButtons(); 
-            renderNumpad();
+            // renderNumpad(); // Called in updateUI now
             checkSavedGame();
             
             // Set Daily Date
@@ -580,10 +595,29 @@
             `).join('');
         }
 
+        function getNumberCounts() {
+            const counts = {};
+            for(let i=1; i<=9; i++) counts[i] = 0;
+            if(board.length) {
+                for(let r=0; r<9; r++) for(let c=0; c<9; c++) {
+                    const v = board[r][c];
+                    if(v >= 1 && v <= 9) counts[v]++;
+                }
+            }
+            return counts;
+        }
+
         function renderNumpad() {
-            document.getElementById('numpad-container').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => `
-                <button onclick="handleInput(${i})" class="btn num-btn" aria-label="Enter number ${i}">${i}</button>
-            `).join('');
+            const counts = getNumberCounts();
+            document.getElementById('numpad-container').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => {
+                const isCompleted = counts[i] >= 9;
+                const isActive = selectedNumberInput === i;
+                let className = "btn num-btn";
+                if(isCompleted) className += " completed";
+                if(isActive) className += " active-input";
+                
+                return `<button onclick="handleNumpadClick(${i})" class="${className}" aria-label="Enter number ${i}">${i}</button>`;
+            }).join('');
         }
 
         function setDifficulty(d) { difficulty = d; renderDifficultyButtons(); }
@@ -595,7 +629,7 @@
         }
 
         /* --- PERSISTENCE --- */
-        const SAVE_KEY = 'sudoku_master_save_v1';
+        const SAVE_KEY = 'sudoku_master_save_v2';
 
         function saveStateToStorage() {
             if(isGameComplete) { localStorage.removeItem(SAVE_KEY); return; }
@@ -623,18 +657,15 @@
                 notes = saved.notes || {}; mistakes = saved.mistakes || 0;
                 difficulty = saved.difficulty; currentCode = saved.currentCode;
                 timer = saved.timer || 0; historyStack = saved.historyStack || [];
-                hintsLeft = saved.hintsLeft;
+                hintsLeft = saved.hintsLeft || 3;
 
                 // Resume Game UI
-                isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null;
+                isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null; selectedNumberInput = null;
                 document.getElementById('menu-view').classList.add('hidden');
                 document.getElementById('game-view').classList.remove('hidden');
                 document.getElementById('game-view').classList.add('flex');
                 
-                let t = difficulty;
-                if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
-                if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
-                document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : t;
+                updateGameHeader();
                 
                 updateUI();
                 renderBoard();
@@ -642,8 +673,17 @@
             } catch(e) { console.error("Save file corrupt", e); localStorage.removeItem(SAVE_KEY); }
         }
 
+        function updateGameHeader() {
+            let t = difficulty;
+            if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
+            if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
+            
+            // Display Code in Title, Difficulty in Status Bar
+            document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : "SUDOKU";
+            document.getElementById('game-difficulty-display').innerText = t;
+        }
+
         function startDailyChallenge() {
-            // Generate DAILY-YYYYMMDD code
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -651,16 +691,13 @@
             const dailyCode = `DAILY-${yyyy}${mm}${dd}`;
 
             document.getElementById('game-code-input').value = dailyCode;
-            
-            // Set Difficulty to Hard specifically for daily challenge to keep it consistent
             setDifficulty('Hard');
-
             startGame(true);
         }
 
         function startGame(useCode) {
             document.getElementById('btn-start').classList.add('hidden');
-            document.getElementById('btn-daily').classList.add('hidden'); // Hide daily button too
+            document.getElementById('btn-daily').classList.add('hidden');
             document.getElementById('btn-continue').classList.add('hidden');
             document.getElementById('loading-start').classList.remove('hidden');
             document.getElementById('loading-start').style.display = 'flex';
@@ -678,9 +715,10 @@
                 solution = data.solution;
                 
                 timer = 0; isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null;
-                notes = {}; notesMode = false; mistakes = 0; historyStack = []; hintsLeft = 1;
+                notes = {}; notesMode = false; mistakes = 0; historyStack = []; hintsLeft = 3;
+                selectedNumberInput = null;
                 
-                saveStateToStorage(); // Save initial state
+                saveStateToStorage();
                 updateUI();
                 
                 document.getElementById('btn-start').classList.remove('hidden');
@@ -692,10 +730,7 @@
                 document.getElementById('game-view').classList.add('flex');
                 document.getElementById('modal-overlay').classList.add('hidden');
                 
-                let t = difficulty;
-                if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
-                if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
-                document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : t;
+                updateGameHeader();
 
                 renderBoard();
                 startTimer();
@@ -714,6 +749,7 @@
             else { mContainer.style.background='white'; mContainer.style.color='black'; mContainer.style.borderColor='var(--border)'; }
             
             updateHintButton();
+            renderNumpad(); // Updates completed numbers and active state
         }
 
         function updateHintButton() {
@@ -743,11 +779,27 @@
         function saveState() { if(historyStack.length>30) historyStack.shift(); historyStack.push({b:JSON.parse(JSON.stringify(board)),n:JSON.parse(JSON.stringify(notes)),m:mistakes}); }
         function undo() {
             if(!historyStack.length || isGameComplete || isPaused) return;
-            const s = historyStack.pop(); board = s.b; notes = s.n; currentHintData = null; renderBoard(); saveStateToStorage();
+            const s = historyStack.pop(); board = s.b; notes = s.n; currentHintData = null; renderBoard(); updateUI(); saveStateToStorage();
         }
-        function resetGame() { if(confirm(getText('confirmReset'))) { saveState(); board=initialBoard.map(r=>[...r]); notes={}; currentHintData=null; hintsLeft=1; updateUI(); renderBoard(); saveStateToStorage(); } }
+        function resetGame() { if(confirm(getText('confirmReset'))) { saveState(); board=initialBoard.map(r=>[...r]); notes={}; currentHintData=null; hintsLeft=3; selectedNumberInput=null; updateUI(); renderBoard(); saveStateToStorage(); } }
 
-        /* --- ADVANCED SOLVING LOGIC (Singles + Locked Candidates) --- */
+        /* --- HINT LOGIC --- */
+        function requestHint() {
+            // Priority: Selected Cell Hint -> Global Smart Hint
+            if(hintsLeft <= 0 || isPaused || isGameComplete) return;
+
+            // If a valid empty cell is selected, hint that specific cell
+            if(selectedCell) {
+                const [r, c] = selectedCell;
+                if(board[r][c] === BLANK) {
+                    applyHint(r, c, solution[r][c], 'reveal');
+                    return;
+                }
+            }
+
+            findSmartHint();
+        }
+
         function getStrictCandidates(r, c, currentBoard) {
             let cands = [];
             if(currentBoard[r][c] !== BLANK) return [];
@@ -757,7 +809,6 @@
             return cands;
         }
 
-        // Returns a full map of candidates for the board
         function getAllCandidatesMap(bd) {
             let map = Array.from({length:9}, () => Array(9).fill(null));
             for(let r=0; r<9; r++) {
@@ -769,103 +820,33 @@
         }
 
         function findSmartHint() {
-            if(isGameComplete || isPaused || hintsLeft<=0) return;
+            if(isGameComplete || isPaused) return;
             currentHintData = null;
 
-            // Step 1: Initialize full candidate map
             let candMap = getAllCandidatesMap(board);
 
-            // Step 2: Apply Locked Candidates (Pointing & Claiming) iteratively to reduce candidates
-            // We run this loop to "clean" the notes internally before checking for singles.
-            // This simulates an advanced player's pencil marks.
-            let changed = true;
-            while(changed) {
-                changed = false;
-                // Check Blocks for Pointing Pairs (Type 1)
-                for(let b=0; b<9; b++) {
-                    const sr=Math.floor(b/3)*3, sc=(b%3)*3;
-                    let numPositions = {}; // num -> array of [r,c]
-                    for(let i=0; i<3; i++) for(let j=0; j<3; j++) {
-                        const r=sr+i, c=sc+j;
-                        if(candMap[r][c]) {
-                            candMap[r][c].forEach(n => {
-                                if(!numPositions[n]) numPositions[n] = [];
-                                numPositions[n].push([r,c]);
-                            });
-                        }
-                    }
-                    for(let n in numPositions) {
-                        const pos = numPositions[n];
-                        if(pos.length < 2) continue;
-                        
-                        // Check if all in same Row
-                        const sameRow = pos.every(p => p[0] === pos[0][0]);
-                        if(sameRow) {
-                            const r = pos[0][0];
-                            for(let c=0; c<9; c++) {
-                                // If column is NOT in this block, remove candidate
-                                if(Math.floor(c/3) !== (b%3) && candMap[r][c] && candMap[r][c].includes(parseInt(n))) {
-                                    candMap[r][c] = candMap[r][c].filter(x => x !== parseInt(n));
-                                    changed = true;
-                                }
-                            }
-                        }
-
-                        // Check if all in same Col
-                        const sameCol = pos.every(p => p[1] === pos[0][1]);
-                        if(sameCol) {
-                            const c = pos[0][1];
-                            for(let r=0; r<9; r++) {
-                                if(Math.floor(r/3) !== Math.floor(b/3) && candMap[r][c] && candMap[r][c].includes(parseInt(n))) {
-                                    candMap[r][c] = candMap[r][c].filter(x => x !== parseInt(n));
-                                    changed = true;
-                                }
-                            }
-                        }
-                    }
-                }
-                // (Could add Claiming Pairs here too, but Pointing is usually enough for 'Extreme' progress)
-            }
-
-            // Step 3: Find Naked Singles in the reduced map
+            // Singles logic (same as before)
             for(let r=0; r<9; r++) for(let c=0; c<9; c++) {
                 if(candMap[r][c] && candMap[r][c].length === 1) {
                     applyHint(r, c, candMap[r][c][0], 'naked');
                     return;
                 }
             }
-
-            // Step 4: Find Hidden Singles in the reduced map
-            // Rows
-            for(let r=0;r<9;r++) {
-                let counts = {};
-                for(let c=0;c<9;c++) if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
-                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-row'); return; }
+            // Fallback to random empty cell reveal if no obvious move
+            let empty = [];
+            for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]===BLANK) empty.push([r,c]);
+            
+            if(empty.length > 0) {
+                const rnd = empty[Math.floor(Math.random()*empty.length)];
+                applyHint(rnd[0], rnd[1], solution[rnd[0]][rnd[1]], 'reveal');
+            } else {
+                alert(getText('boardFull'));
             }
-            // Cols
-            for(let c=0;c<9;c++) {
-                let counts = {};
-                for(let r=0;r<9;r++) if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
-                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-col'); return; }
-            }
-            // Boxes
-            for(let b=0;b<9;b++) {
-                let counts = {};
-                const sr=Math.floor(b/3)*3, sc=(b%3)*3;
-                for(let i=0;i<3;i++) for(let j=0;j<3;j++) {
-                    const r=sr+i, c=sc+j;
-                    if(candMap[r][c]) candMap[r][c].forEach(n => { if(!counts[n]) counts[n]=[]; counts[n].push([r,c]); });
-                }
-                for(let n in counts) if(counts[n].length===1) { applyHint(counts[n][0][0], counts[n][0][1], parseInt(n), 'hidden-box'); return; }
-            }
-
-            alert(getText('boardFull'));
         }
 
         function applyHint(r, c, val, type) {
             currentHintData = { target: [r,c], value: val, type: type, region: [] };
             
-            // Visuals
             if(type === 'hidden-row') for(let i=0;i<9;i++) currentHintData.region.push([r,i]);
             else if(type === 'hidden-col') for(let i=0;i<9;i++) currentHintData.region.push([i,c]);
             else if(type === 'hidden-box') {
@@ -880,35 +861,38 @@
             saveStateToStorage();
         }
 
-        function checkBoard() {
-            let err = 0;
-            for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]!==BLANK && board[r][c]!==solution[r][c]) err++;
-            if(err===0) alert(getText('perfect')); else alert(err + (currentLang==='tr'?' hata':' mistakes'));
-        }
-
         function showModal(type) {
             const over = document.getElementById('modal-overlay');
             const icon = document.getElementById('modal-icon');
             const title = document.getElementById('modal-title');
             const desc = document.getElementById('modal-desc');
             const btn = document.getElementById('modal-primary-btn');
+            const btnReview = document.getElementById('modal-review-btn');
             
             over.classList.remove('hidden');
             if(type === 'win') {
-                localStorage.removeItem(SAVE_KEY); // Clear save on win
+                localStorage.removeItem(SAVE_KEY); 
                 icon.style.background = '#fef9c3'; icon.innerHTML = '<svg style="width:2rem;height:2rem;color:#ca8a04;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
                 title.innerText = getText('solved');
                 desc.innerText = `${getText('finalTime')}: ${document.getElementById('timer-display').innerText}`;
                 btn.innerText = getText('mainMenu');
                 btn.onclick = showMenu;
+                btnReview.classList.remove('hidden');
             } else {
-                localStorage.removeItem(SAVE_KEY); // Clear save on lose
+                localStorage.removeItem(SAVE_KEY); 
                 icon.style.background = '#fee2e2'; icon.innerHTML = '<svg style="width:2rem;height:2rem;color:#ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
                 title.innerText = getText('gameOver');
                 desc.innerText = getText('tooManyMistakes');
                 btn.innerText = getText('tryAgain');
                 btn.onclick = restartSameLevel;
+                btnReview.classList.remove('hidden');
             }
+        }
+
+        function reviewBoard() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            // Keep game view but disable interaction basically?
+            // Actually just stay in game view. Inputs are blocked by isGameComplete flag already.
         }
 
         function renderBoard() {
@@ -918,6 +902,13 @@
             if(isPaused) {
                 grid.innerHTML = '<div style="grid-column:1/-1;grid-row:1/-1;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#64748b;">PAUSED</div>';
                 return;
+            }
+
+            // Determine what number to highlight
+            let highlightVal = null;
+            if(selectedNumberInput) highlightVal = selectedNumberInput;
+            else if(selectedCell && board[selectedCell[0]][selectedCell[1]] !== BLANK) {
+                highlightVal = board[selectedCell[0]][selectedCell[1]];
             }
 
             for(let r=0;r<9;r++) for(let c=0;c<9;c++) {
@@ -931,22 +922,20 @@
 
                 const el = document.createElement('div');
                 el.className = 'cell';
-                el.role = 'gridcell';
-                el.tabIndex = 0;
-                // Accessibility Label
-                const posLabel = `Row ${r+1} Col ${c+1}`;
-                const valLabel = val === BLANK ? "Empty" : val;
-                el.setAttribute('aria-label', `${posLabel}, ${valLabel}`);
-
-                // Styles
+                
                 if(c%3===2 && c!==8) el.classList.add('border-r-thick');
                 if(r%3===2 && r!==8) el.classList.add('border-b-thick');
                 
                 if(sel) { el.classList.add('selected'); if(err) el.classList.add('error'); }
                 else if(selectedCell) {
-                    const [sr, sc] = selectedCell;
-                    if(board[sr][sc]!==BLANK && val===board[sr][sc]) el.classList.add('same-val');
-                    else if(sr===r || sc===c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) el.classList.add('related');
+                   // Related row/col logic (optional, keep it subtle)
+                   const [sr, sc] = selectedCell;
+                   if(sr===r || sc===c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) el.classList.add('related');
+                }
+
+                // Global Number Highlighting
+                if(val !== BLANK && val === highlightVal) {
+                    el.classList.add('same-val');
                 }
 
                 if(init) { el.classList.add('initial'); if(sel) el.classList.add('selected'); }
@@ -955,7 +944,6 @@
                 if(isHintTarget) el.classList.add('hint-target');
                 if(isHintRegion && !isHintTarget) el.classList.add('hint-region');
 
-                // Content
                 if(val!==BLANK) el.innerText = val;
                 else if(isHintTarget) el.innerHTML = `<span class="ghost-number">${currentHintData.value}</span>`;
                 else {
@@ -966,30 +954,77 @@
                             const s = document.createElement('span');
                             s.style.display='flex'; s.style.justifyContent='center'; s.style.alignItems='center';
                             s.innerText = n.includes(k) ? k : '';
-                            s.style.color = '#64748b';
+                            s.style.color = highlightVal === k ? 'var(--primary)' : '#64748b';
+                            if(highlightVal === k) s.style.fontWeight = 'bold';
                             el.appendChild(s);
                         }
                     }
                 }
 
-                el.onclick = () => { if(!isGameComplete) { selectedCell=[r,c]; currentHintData=null; renderBoard(); } };
-                // Keyboard Nav focus update
-                el.onfocus = () => { if(!isGameComplete) { selectedCell=[r,c]; renderBoard(); } };
+                el.onclick = () => handleCellClick(r, c);
                 
                 grid.appendChild(el);
             }
         }
 
+        function handleNumpadClick(num) {
+            if(isGameComplete || isPaused) return;
+
+            // Toggle logic
+            if(selectedNumberInput === num) {
+                selectedNumberInput = null;
+            } else {
+                selectedNumberInput = num;
+            }
+
+            // If a cell is currently selected and we click a number, try to fill it (Classic Mode behavior mixed in)
+            if(selectedCell && !selectedNumberInput) { 
+                // Only if we just deselected or if we want dual behavior. 
+                // But user wants "number first" primarily. 
+                // Let's allow filling the currently selected cell if it's empty
+                 if(board[selectedCell[0]][selectedCell[1]] === BLANK) {
+                     handleInput(num);
+                     // After filling, keep the number selected? User said "don't want to select again and again"
+                     selectedNumberInput = num; 
+                 }
+            }
+
+            updateUI();
+            renderBoard();
+        }
+
+        function handleCellClick(r, c) {
+            if(isGameComplete || isPaused) return;
+
+            // If a number is selected (Input First Mode)
+            if(selectedNumberInput !== null) {
+                // If cell is empty, fill it
+                if(board[r][c] === BLANK) {
+                    selectedCell = [r, c];
+                    handleInput(selectedNumberInput);
+                } else {
+                    // Cell not empty, just select it (maybe they want to see related numbers)
+                    selectedCell = [r, c];
+                }
+            } else {
+                // Standard Select Mode
+                selectedCell = [r, c];
+            }
+            
+            currentHintData = null;
+            renderBoard();
+        }
+
         function handleInput(n) {
-            // Debounce to prevent bounce/double triggers on mobile
             const now = Date.now();
-            if (now - lastInputTime < 150) return; // 150ms lockout
+            if (now - lastInputTime < 100) return; 
             lastInputTime = now;
 
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
             if(initialBoard[r][c]!==BLANK) return;
-            if(board[r][c]===solution[r][c]) return;
+            // If already has this number, do nothing
+            if(board[r][c]===n) return;
 
             if(notesMode) {
                 const k = `${r}-${c}`;
@@ -1003,7 +1038,7 @@
                     if(mistakes>=MAX_MISTAKES) { isGameComplete=true; stopTimer(); showModal('lose'); }
                 } else {
                     board[r][c]=n; 
-                    // Clear notes in row/col/box
+                    // Clear notes
                     const sr=Math.floor(r/3)*3, sc=Math.floor(c/3)*3;
                     for(let i=0;i<9;i++) {
                         if(notes[`${r}-${i}`]) notes[`${r}-${i}`]=notes[`${r}-${i}`].filter(x=>x!==n);
@@ -1015,38 +1050,49 @@
                     
                     let filled=0; for(let i=0;i<9;i++) for(let j=0;j<9;j++) if(board[i][j]!==BLANK) filled++;
                     saveStateToStorage();
+                    
+                    // Check if game won
                     if(filled===81) { isGameComplete=true; stopTimer(); showModal('win'); }
                 }
             }
             currentHintData=null;
+            updateUI(); // Updates Numpad for completion status
             renderBoard();
         }
 
         function handleErase() {
-            // Debounce
-            const now = Date.now();
-            if (now - lastInputTime < 150) return;
-            lastInputTime = now;
-
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
             if(initialBoard[r][c]!==BLANK) return;
             saveState();
-            board[r][c]=BLANK; notes[`${r}-${c}`]=[]; currentHintData=null; renderBoard();
+            board[r][c]=BLANK; notes[`${r}-${c}`]=[]; currentHintData=null; 
+            updateUI();
+            renderBoard();
             saveStateToStorage();
         }
 
         document.addEventListener('keydown', e => {
-            if(!selectedCell || isGameComplete || isPaused) return;
+            if(isGameComplete || isPaused) return;
             const k = e.key;
+            
+            // Handle Numbers (Numpad input via keyboard)
             if(k>='1' && k<='9') {
-                e.preventDefault(); 
-                if (document.activeElement) document.activeElement.blur(); 
-                handleInput(parseInt(k));
+                const num = parseInt(k);
+                // If in "Number First" mode (selectedNumberInput active), keyboard should probably toggle that number 
+                // OR just fill selected cell if one is selected.
+                // Standard behavior: Fill selected cell.
+                if(selectedCell) handleInput(num);
+                else {
+                    // Toggle Numpad Selection
+                    handleNumpadClick(num);
+                }
             }
+
+            if(!selectedCell) return;
+            
             if(k==='Backspace'||k==='Delete') handleErase();
             if(k==='n'||k==='N') toggleNotes();
-            if(k==='h'||k==='H') findSmartHint();
+            if(k==='h'||k==='H') requestHint();
             if((e.ctrlKey||e.metaKey) && k==='z') undo();
             
             let [r,c] = selectedCell;
@@ -1054,10 +1100,6 @@
             if(k==='ArrowLeft') c=Math.max(0,c-1); if(k==='ArrowRight') c=Math.min(8,c+1);
             if(r!==selectedCell[0]||c!==selectedCell[1]) {
                 selectedCell=[r,c]; renderBoard();
-                // Move focus for screen reader
-                const idx = r*9+c;
-                const cells = document.querySelectorAll('.cell');
-                if(cells[idx]) cells[idx].focus(); 
             }
         });
     </script>

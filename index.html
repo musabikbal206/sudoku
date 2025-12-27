@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sudoku Master</title>
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* --- OFFLINE CSS SYSTEM --- */
         :root {
@@ -385,9 +387,15 @@
                 <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </button>
             <h1 id="game-header-title" class="text-sm font-bold uppercase tracking-wider"></h1>
-            <button onclick="togglePause()" class="btn" style="color: var(--text-muted);" aria-label="Pause Game">
-                <svg id="pause-icon" style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </button>
+            
+            <div class="flex gap-2">
+                <button onclick="downloadPDF()" class="btn" style="color: var(--text-muted);" aria-label="Download PDF">
+                    <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </button>
+                <button onclick="togglePause()" class="btn" style="color: var(--text-muted);" aria-label="Pause Game">
+                    <svg id="pause-icon" style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            </div>
         </header>
 
         <!-- Status Bar -->
@@ -645,6 +653,93 @@
             const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let r = ''; for(let i=0;i<5;i++) r += c.charAt(Math.floor(Math.random()*c.length));
             document.getElementById('game-code-input').value = r;
+        }
+
+        /* --- PDF GENERATION --- */
+        async function downloadPDF() {
+            if (!window.jspdf) {
+                alert("PDF kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edin.");
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Colors
+            const colorBlack = [30, 41, 59];
+            const colorGray = [100, 116, 139];
+            const colorLight = [226, 232, 240];
+
+            // Title
+            doc.setFontSize(24);
+            doc.setTextColor(...colorBlack);
+            doc.text("SUDOKU MASTER", 105, 25, { align: "center" });
+            
+            // Subtitle info
+            doc.setFontSize(12);
+            doc.setTextColor(...colorGray);
+            let diffName = getText('diff' + difficulty);
+            if(!diffName) diffName = difficulty;
+            doc.text(`${getText('difficulty')}: ${diffName}  |  Code: ${currentCode || '-'}`, 105, 35, { align: "center" });
+
+            // Grid Config
+            const startX = 25;
+            const startY = 50;
+            const cellSize = 160 / 9; // 160mm width total
+
+            doc.setDrawColor(...colorBlack);
+            doc.setLineWidth(0.5);
+
+            // Draw Cells
+            doc.setFontSize(16);
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const x = startX + (c * cellSize);
+                    const y = startY + (r * cellSize);
+                    
+                    // Draw box
+                    doc.setDrawColor(...colorGray);
+                    doc.setLineWidth(0.2);
+                    doc.rect(x, y, cellSize, cellSize);
+
+                    // Draw Number
+                    const val = board[r][c];
+                    if (val !== BLANK) {
+                        const isInit = initialBoard[r][c] !== BLANK;
+                        if (isInit) {
+                            doc.setFont("helvetica", "bold");
+                            doc.setTextColor(0, 0, 0);
+                        } else {
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(80, 80, 80); // Lighter for user inputs
+                        }
+                        // Center text
+                        doc.text(String(val), x + cellSize/2, y + cellSize/1.5, { align: "center" });
+                    }
+                }
+            }
+
+            // Draw Thick Lines (3x3)
+            doc.setDrawColor(...colorBlack);
+            doc.setLineWidth(1.0);
+            for (let i = 0; i <= 3; i++) {
+                const offset = i * 3 * cellSize;
+                // Vertical
+                doc.line(startX + offset, startY, startX + offset, startY + 9 * cellSize);
+                // Horizontal
+                doc.line(startX, startY + offset, startX + 9 * cellSize, startY + offset);
+            }
+
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(...colorGray);
+            doc.text("Sudoku Master - Generated Puzzle", 105, 280, { align: "center" });
+
+            doc.save(`Sudoku_${currentCode || 'Game'}.pdf`);
         }
 
         /* --- PERSISTENCE --- */

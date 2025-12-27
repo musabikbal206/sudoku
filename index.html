@@ -223,6 +223,11 @@
             font-weight: 700;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
         }
         .num-btn:active { transform: translateY(2px); border-bottom: none; }
         .num-btn.active-input { 
@@ -239,6 +244,12 @@
             color: #94a3b8; 
             border-color: transparent; 
             box-shadow: none; 
+        }
+        .remaining-count {
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 2px;
         }
 
         /* Animations */
@@ -542,7 +553,7 @@
         let board = [], initialBoard = [], solution = [], notes = {}, historyStack = [];
         let difficulty = 'Medium', currentCode = null, timer = 0, timerInterval = null;
         let isPaused = false, isGameComplete = false, selectedCell = null, notesMode = false;
-        let selectedNumberInput = null; // "Önce Sayı Modu" için aktif sayı
+        let selectedNumberInput = null; 
         let mistakes = 0; const MAX_MISTAKES = 3;
         let hintsLeft = 3; let currentHintData = null; 
         let lastInputTime = 0;
@@ -611,13 +622,20 @@
         function renderNumpad() {
             const counts = getNumberCounts();
             document.getElementById('numpad-container').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => {
-                const isCompleted = counts[i] >= 9;
+                const count = counts[i];
+                const remaining = 9 - count;
+                const isCompleted = count >= 9;
                 const isActive = selectedNumberInput === i;
                 let className = "btn num-btn";
                 if(isCompleted) className += " completed";
                 if(isActive) className += " active-input";
                 
-                return `<button onclick="handleNumpadClick(${i})" class="${className}" aria-label="Enter number ${i}">${i}</button>`;
+                return `
+                    <button onclick="handleNumpadClick(${i})" class="${className}" aria-label="Enter number ${i}">
+                        <span>${i}</span>
+                        ${remaining > 0 ? `<span class="remaining-count">${remaining}</span>` : ''}
+                    </button>
+                `;
             }).join('');
         }
 
@@ -960,14 +978,13 @@
                 const [r, c] = selectedCell;
                 if(initialBoard[r][c] === BLANK) {
                     handleInput(num);
-                    return; // İŞLEM TAMAM, ÇIK (DÜZELTİLDİ)
+                    return; // İŞLEM TAMAM, ÇIK
                 }
-                // EĞER KUTU SABİTSE (initialBoard doluysa), YAZAMAZSIN.
-                // AMA "RETURN" ETME, AŞAĞIDAKİ SEÇİME İZİN VER.
-                selectedCell = null; // Seçimi temizle ki kafa karışmasın
+                // EĞER KUTU SABİTSE, SEÇİMİ BIRAK, SAYI MODUNA GEÇ
+                selectedCell = null; 
             }
 
-            // 2. TOGGLE MOD: Seçim yoksa (veya yukarıda temizlendiyse), sayı modunu aç/kapa
+            // 2. TOGGLE MOD
             if(selectedNumberInput === num) {
                 selectedNumberInput = null;
             } else {
@@ -984,10 +1001,18 @@
 
             const clickedVal = board[r][c];
 
-            // 1. DOLU HÜCRE: Sayıyı "Eline Al" (Kopyala)
+            // 1. DOLU HÜCRE: Sayıyı "Eline Al" (Kopyala) veya "Bırak" (Toggle)
             if (clickedVal !== BLANK) {
-                selectedNumberInput = clickedVal;
-                selectedCell = [r, c];
+                // Eğer zaten bu hücre seçiliyse ve sayı da aktifse -> Kapat
+                if (selectedCell && selectedCell[0] === r && selectedCell[1] === c && selectedNumberInput === clickedVal) {
+                    selectedNumberInput = null;
+                    selectedCell = null; // KEY FIX: Vurguyu tamamen kaldırmak için seçili hücreyi de sil.
+                } else {
+                    // Değilse -> Aç
+                    selectedNumberInput = clickedVal;
+                    selectedCell = [r, c];
+                }
+                
                 currentHintData = null;
                 updateUI();
                 renderBoard();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sudoku Master</title>
+    <title>Sudoku Master Ultimate</title>
     <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -117,6 +117,7 @@
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
             gap: 0.5rem;
+            min-height: 3rem;
         }
 
         /* Grid */
@@ -172,6 +173,9 @@
         .cell.initial.same-val { background-color: #93c5fd !important; color: #0f172a !important; }
         .cell.error { background-color: #fee2e2 !important; color: #ef4444 !important; }
         .cell.selected.error { background-color: #ef4444 !important; color: white !important; }
+        
+        /* Solver Mode Specific Cell Style */
+        .cell.solver-input { color: #0f172a; font-weight: 800; }
 
         /* Hint Styles */
         .hint-target { animation: pulse-green 2s infinite; background-color: #f0fdf4 !important; }
@@ -208,6 +212,19 @@
         .control-btn:hover { background: var(--white); color: var(--primary); box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
         .control-btn.active { background: var(--primary); color: var(--white); }
         .control-btn svg { width: 1.25rem; height: 1.25rem; margin-bottom: 0.25rem; }
+
+        /* Solver Controls - UPDATED */
+        .solver-controls-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .solver-tools-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.25rem;
+        }
 
         /* Numpad */
         .numpad-grid {
@@ -346,6 +363,16 @@
                         </div>
                     </button>
                     
+                    <button id="btn-solver" onclick="startSolverMode()" class="btn w-full p-4 font-bold" style="border-radius: 0.75rem; justify-content: flex-start; gap: 1rem; background: #0ea5e9; color: white;">
+                         <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        </div>
+                         <div style="text-align: left;">
+                            <div data-key="tool" class="text-sm" style="opacity: 0.8; font-weight: 400;">Araçlar</div>
+                            <div data-key="solverMode" class="text-lg" style="line-height: 1;">Çözücü Modu</div>
+                        </div>
+                    </button>
+
                     <div id="loading-start" class="hidden w-full p-4 btn-primary font-bold flex items-center justify-center gap-2" style="border-radius: 0.75rem; background: #334155;">
                         <svg class="animate-spin" style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <span data-key="generating">Oluşturuluyor...</span>
@@ -392,7 +419,7 @@
                 <button onclick="downloadPDF()" class="btn" style="color: var(--text-muted);" aria-label="Download PDF">
                     <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 </button>
-                <button onclick="togglePause()" class="btn" style="color: var(--text-muted);" aria-label="Pause Game">
+                <button id="btn-pause" onclick="togglePause()" class="btn" style="color: var(--text-muted);" aria-label="Pause Game">
                     <svg id="pause-icon" style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
             </div>
@@ -400,18 +427,21 @@
 
         <!-- Status Bar -->
         <div class="status-bar">
-             <div class="flex items-center gap-2">
+             <div class="flex items-center gap-2" id="status-difficulty">
                  <span data-key="difficulty" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Zorluk</span>
                  <span id="game-difficulty-display" class="font-bold text-sm" style="color: var(--primary);"></span>
              </div>
+             <div class="flex items-center gap-2 hidden" id="status-solver">
+                 <span data-key="solverMode" class="text-xs font-bold uppercase" style="color: var(--primary);">ÇÖZÜCÜ MODU</span>
+             </div>
              
              <div class="flex items-center justify-center">
-                 <div class="font-mono font-bold text-sm px-3 py-1" style="background: var(--primary); color: white; border-radius: 4px;">
+                 <div id="timer-container" class="font-mono font-bold text-sm px-3 py-1" style="background: var(--primary); color: white; border-radius: 4px;">
                      <span id="timer-display">00:00</span>
                  </div>
              </div>
 
-             <div class="flex items-center gap-2 justify-end">
+             <div class="flex items-center gap-2 justify-end" id="status-mistakes">
                  <span data-key="mistakes" class="text-xs font-bold uppercase" style="color: var(--text-muted);">Hata</span>
                  <div id="mistakes-container" class="font-mono font-bold text-sm px-2 py-1" style="background: white; border-radius: 4px; border: 1px solid var(--border);">
                      <span id="mistake-count">0</span>/3
@@ -427,7 +457,9 @@
 
             <!-- Controls -->
             <div class="w-full" style="max-width: 28rem;">
-                <div class="controls-grid">
+                
+                <!-- GAME Controls -->
+                <div id="game-controls" class="controls-grid">
                      <button onclick="undo()" class="control-btn" aria-label="Undo">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
                         <span data-key="undo">Geri</span>
@@ -447,6 +479,32 @@
                      <button id="btn-hint" onclick="requestHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                         <span id="label-hint">İpucu (1)</span>
+                    </button>
+                </div>
+
+                <!-- SOLVER Controls - UPDATED -->
+                <div id="solver-controls" class="solver-controls-grid hidden">
+                    <div class="solver-tools-row">
+                        <!-- Undo -->
+                        <button onclick="undo()" class="control-btn" style="background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                            <span data-key="undo">Geri</span>
+                        </button>
+                        <!-- Erase -->
+                        <button onclick="handleErase()" class="control-btn" style="background: white; color: var(--error); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span data-key="erase">Sil</span>
+                        </button>
+                        <!-- Clear -->
+                        <button onclick="resetSolver()" class="control-btn" style="background: white; color: var(--text-muted); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span data-key="clearBoard">TEMİZLE</span>
+                        </button>
+                    </div>
+
+                    <button onclick="requestSolverSolution()" class="btn btn-primary p-3 font-bold w-full" style="border-radius: 0.75rem;">
+                        <svg style="width: 1.25rem; height: 1.25rem; margin-right:0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span data-key="solveNow">ÇÖZ</span>
                     </button>
                 </div>
 
@@ -490,10 +548,13 @@
                 return true;
             }
             function solveSudoku(bd, rand) {
+                // If rand provided, we randomize choices, otherwise deterministic
                 for (let r = 0; r < 9; r++) {
                     for (let c = 0; c < 9; c++) {
                         if (bd[r][c] === BLANK) {
-                            const nums = [1,2,3,4,5,6,7,8,9].map(v => ({v, s: rand()})).sort((a,b)=>a.s-b.s).map(o=>o.v);
+                            let nums = [1,2,3,4,5,6,7,8,9];
+                            if(rand) nums = nums.map(v => ({v, s: rand()})).sort((a,b)=>a.s-b.s).map(o=>o.v);
+                            
                             for (let n of nums) {
                                 if (isValid(bd, r, c, n)) {
                                     bd[r][c] = n;
@@ -543,16 +604,28 @@
                 }
                 return { puzzle: puz, solution: sol };
             }
-            self.onmessage = e => { self.postMessage(generatePuzzle(e.data.difficulty, e.data.seedCode)); };
+            
+            self.onmessage = e => {
+                if(e.data.cmd === 'solve') {
+                    // Try to solve a custom board
+                    const boardCopy = e.data.board.map(r => [...r]);
+                    const success = solveSudoku(boardCopy, null); // Deterministic solve
+                    self.postMessage({ cmd: 'solved', solution: boardCopy, success: success });
+                } else {
+                    self.postMessage(generatePuzzle(e.data.difficulty, e.data.seedCode)); 
+                }
+            };
         `;
 
         // TRANSLATIONS
         const i18n = {
             en: {
-                subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game", reviewBoard: "Review Board"
+                subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game", reviewBoard: "Review Board",
+                tool: "Tools", solverMode: "Solver Mode", clearBoard: "Clear", solveNow: "Solve", unsolvable: "Unsolvable Puzzle!", invalidBoard: "Invalid Board! Check for duplicates.", solving: "Solving..."
             },
             tr: {
-                subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et", reviewBoard: "Tahtayı İncele"
+                subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et", reviewBoard: "Tahtayı İncele",
+                tool: "Araçlar", solverMode: "Çözücü Modu", clearBoard: "Temizle", solveNow: "Çöz", unsolvable: "Çözülemiyor!", invalidBoard: "Geçersiz Tahta! Tekrarları kontrol edin.", solving: "Çözülüyor..."
             }
         };
 
@@ -565,6 +638,9 @@
         let mistakes = 0; const MAX_MISTAKES = 3;
         let hintsLeft = 3; let currentHintData = null; 
         let lastInputTime = 0;
+        
+        // Solver Mode State
+        let isSolverMode = false;
 
         function isValid(bd, r, c, n) {
             for(let x=0;x<9;x++) if(bd[r][x]===n && x!==c) return false;
@@ -635,13 +711,14 @@
                 const isCompleted = count >= 9;
                 const isActive = selectedNumberInput === i;
                 let className = "btn num-btn";
-                if(isCompleted) className += " completed";
+                // In solver mode, we don't fade out numbers
+                if(isCompleted && !isSolverMode) className += " completed";
                 if(isActive) className += " active-input";
                 
                 return `
                     <button onclick="handleNumpadClick(${i})" class="${className}" aria-label="Enter number ${i}">
                         <span>${i}</span>
-                        ${remaining > 0 ? `<span class="remaining-count">${remaining}</span>` : ''}
+                        ${remaining > 0 && !isSolverMode ? `<span class="remaining-count">${remaining}</span>` : ''}
                     </button>
                 `;
             }).join('');
@@ -677,14 +754,20 @@
             // Title
             doc.setFontSize(24);
             doc.setTextColor(...colorBlack);
-            doc.text("SUDOKU MASTER", 105, 25, { align: "center" });
+            doc.text(isSolverMode ? "SUDOKU SOLVER" : "SUDOKU MASTER", 105, 25, { align: "center" });
             
             // Subtitle info
             doc.setFontSize(12);
             doc.setTextColor(...colorGray);
-            let diffName = getText('diff' + difficulty);
-            if(!diffName) diffName = difficulty;
-            doc.text(`${getText('difficulty')}: ${diffName}  |  Code: ${currentCode || '-'}`, 105, 35, { align: "center" });
+            let subtext = "";
+            if(isSolverMode) {
+                subtext = currentCode ? `Solution for Code: ${currentCode}` : "Custom Solution";
+            } else {
+                let diffName = getText('diff' + difficulty);
+                if(!diffName) diffName = difficulty;
+                subtext = `${getText('difficulty')}: ${diffName}  |  Code: ${currentCode || '-'}`;
+            }
+            doc.text(subtext, 105, 35, { align: "center" });
 
             // Grid Config
             const startX = 25;
@@ -717,6 +800,12 @@
                             doc.setFont("helvetica", "normal");
                             doc.setTextColor(80, 80, 80); // Lighter for user inputs
                         }
+                        
+                        // Solver overrides:
+                        if(isSolverMode && !isInit) {
+                             doc.setTextColor(34, 197, 94); // Greenish
+                        }
+
                         // Center text
                         doc.text(String(val), x + cellSize/2, y + cellSize/1.5, { align: "center" });
                     }
@@ -739,13 +828,14 @@
             doc.setTextColor(...colorGray);
             doc.text("Sudoku Master - Generated Puzzle", 105, 280, { align: "center" });
 
-            doc.save(`Sudoku_${currentCode || 'Game'}.pdf`);
+            doc.save(`Sudoku_${isSolverMode ? 'Solved' : currentCode}.pdf`);
         }
 
         /* --- PERSISTENCE --- */
         const SAVE_KEY = 'sudoku_master_save_v2';
 
         function saveStateToStorage() {
+            if(isSolverMode) return; // Don't save solver state
             if(isGameComplete) { localStorage.removeItem(SAVE_KEY); return; }
             const state = {
                 board, initialBoard, solution, notes, mistakes,
@@ -774,6 +864,8 @@
                 hintsLeft = saved.hintsLeft || 3;
 
                 isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null; selectedNumberInput = null;
+                isSolverMode = false;
+                
                 document.getElementById('menu-view').classList.add('hidden');
                 document.getElementById('game-view').classList.remove('hidden');
                 document.getElementById('game-view').classList.add('flex');
@@ -786,6 +878,10 @@
         }
 
         function updateGameHeader() {
+            if(isSolverMode) {
+                document.getElementById('game-header-title').innerText = currentCode ? `SOLVED: ${currentCode}` : getText('solverMode');
+                return;
+            }
             let t = difficulty;
             if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
             if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
@@ -806,10 +902,85 @@
             startGame(true);
         }
 
-        function startGame(useCode) {
+        function startSolverMode() {
+            const inputCode = document.getElementById('game-code-input').value.trim().toUpperCase();
+
+            if (inputCode) {
+                // Code provided: Load solved puzzle
+                startSolverWithCode(inputCode);
+            } else {
+                // No code: Blank solver
+                isSolverMode = true;
+                currentCode = null;
+                board = Array.from({length:9}, () => Array(9).fill(BLANK));
+                initialBoard = Array.from({length:9}, () => Array(9).fill(BLANK));
+                solution = [];
+                notes = {};
+                historyStack = []; // Reset history for solver mode
+                
+                switchViewToGame();
+                updateGameHeader();
+                updateUI();
+                renderBoard();
+            }
+        }
+
+        function startSolverWithCode(code) {
             document.getElementById('btn-start').classList.add('hidden');
             document.getElementById('btn-daily').classList.add('hidden');
             document.getElementById('btn-continue').classList.add('hidden');
+            document.getElementById('btn-solver').classList.add('hidden');
+            document.getElementById('loading-start').classList.remove('hidden');
+            document.getElementById('loading-start').style.display = 'flex';
+
+            const blob = new Blob([workerScript], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+
+            worker.onmessage = function(e) {
+                const data = e.data;
+                isSolverMode = true;
+                
+                // Key difference: Board is the solution
+                initialBoard = data.puzzle.map(r => [...r]);
+                board = data.solution.map(r => [...r]); 
+                solution = data.solution;
+                currentCode = code;
+
+                // Reset game state vars
+                timer = 0; isPaused = false; isGameComplete = false; selectedCell = null; 
+                notes = {}; notesMode = false; mistakes = 0; historyStack = [];
+                currentHintData = null; selectedNumberInput = null;
+                
+                switchViewToGame();
+                
+                updateGameHeader();
+                updateUI();
+                renderBoard(); // Render will handle styling based on isSolverMode and initialBoard
+                worker.terminate();
+            };
+            
+            // Use current difficulty to determine holes pattern
+            worker.postMessage({ difficulty: difficulty, seedCode: code });
+        }
+
+        function switchViewToGame() {
+            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('btn-daily').classList.remove('hidden');
+            document.getElementById('btn-solver').classList.remove('hidden');
+            document.getElementById('loading-start').classList.add('hidden');
+            document.getElementById('loading-start').style.display = 'none';
+            document.getElementById('menu-view').classList.add('hidden');
+            document.getElementById('game-view').classList.remove('hidden');
+            document.getElementById('game-view').classList.add('flex');
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        function startGame(useCode) {
+            isSolverMode = false;
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-daily').classList.add('hidden');
+            document.getElementById('btn-continue').classList.add('hidden');
+            document.getElementById('btn-solver').classList.add('hidden');
             document.getElementById('loading-start').classList.remove('hidden');
             document.getElementById('loading-start').style.display = 'flex';
 
@@ -830,18 +1001,10 @@
                 selectedNumberInput = null;
                 
                 saveStateToStorage();
-                updateUI();
-                
-                document.getElementById('btn-start').classList.remove('hidden');
-                document.getElementById('btn-daily').classList.remove('hidden');
-                document.getElementById('loading-start').classList.add('hidden');
-                document.getElementById('loading-start').style.display = 'none';
-                document.getElementById('menu-view').classList.add('hidden');
-                document.getElementById('game-view').classList.remove('hidden');
-                document.getElementById('game-view').classList.add('flex');
-                document.getElementById('modal-overlay').classList.add('hidden');
+                switchViewToGame();
                 
                 updateGameHeader();
+                updateUI();
                 renderBoard();
                 startTimer();
                 worker.terminate();
@@ -850,6 +1013,27 @@
         }
 
         function updateUI() {
+            // Toggle Logic between Game and Solver
+            if(isSolverMode) {
+                document.getElementById('status-difficulty').classList.add('hidden');
+                document.getElementById('status-mistakes').classList.add('hidden');
+                document.getElementById('timer-container').classList.add('hidden');
+                document.getElementById('status-solver').classList.remove('hidden');
+                document.getElementById('btn-pause').classList.add('hidden');
+
+                document.getElementById('game-controls').classList.add('hidden');
+                document.getElementById('solver-controls').classList.remove('hidden');
+            } else {
+                document.getElementById('status-difficulty').classList.remove('hidden');
+                document.getElementById('status-mistakes').classList.remove('hidden');
+                document.getElementById('timer-container').classList.remove('hidden');
+                document.getElementById('status-solver').classList.add('hidden');
+                document.getElementById('btn-pause').classList.remove('hidden');
+
+                document.getElementById('game-controls').classList.remove('hidden');
+                document.getElementById('solver-controls').classList.add('hidden');
+            }
+
             const noteBtn = document.getElementById('btn-notes');
             if(notesMode) { noteBtn.classList.add('active'); } else { noteBtn.classList.remove('active'); }
             
@@ -883,15 +1067,64 @@
 
         function startTimer() { stopTimer(); timerInterval = setInterval(() => { timer++; const m=Math.floor(timer/60),s=timer%60; document.getElementById('timer-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }, 1000); }
         function stopTimer() { if (timerInterval) clearInterval(timerInterval); }
-        function togglePause() { isPaused = !isPaused; renderBoard(); if(isPaused) stopTimer(); else startTimer(); }
+        function togglePause() { if(isSolverMode) return; isPaused = !isPaused; renderBoard(); if(isPaused) stopTimer(); else startTimer(); }
 
         function toggleNotes() { notesMode = !notesMode; updateUI(); }
         function saveState() { if(historyStack.length>30) historyStack.shift(); historyStack.push({b:JSON.parse(JSON.stringify(board)),n:JSON.parse(JSON.stringify(notes)),m:mistakes}); }
         function undo() {
-            if(!historyStack.length || isGameComplete || isPaused) return;
+            // Updated to work in solver mode (isGameComplete check removed for solver)
+            if(!historyStack.length || (isGameComplete && !isSolverMode) || isPaused) return;
             const s = historyStack.pop(); board = s.b; notes = s.n; currentHintData = null; renderBoard(); updateUI(); saveStateToStorage();
         }
         function resetGame() { if(confirm(getText('confirmReset'))) { saveState(); board=initialBoard.map(r=>[...r]); notes={}; currentHintData=null; hintsLeft=3; selectedNumberInput=null; updateUI(); renderBoard(); saveStateToStorage(); } }
+
+        /* --- SOLVER LOGIC --- */
+        function resetSolver() {
+            board = Array.from({length:9}, () => Array(9).fill(BLANK));
+            initialBoard = Array.from({length:9}, () => Array(9).fill(BLANK));
+            currentCode = null;
+            historyStack = []; // Clear history on reset
+            selectedCell = null; selectedNumberInput = null;
+            updateGameHeader();
+            renderBoard();
+        }
+
+        function requestSolverSolution() {
+            // 1. Validation
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    const val = board[r][c];
+                    if(val !== BLANK) {
+                        if(!isValid(board, r, c, val)) {
+                            alert(getText('invalidBoard'));
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Lock current input as initialBoard
+            initialBoard = board.map(r=>[...r]);
+            renderBoard(); // Update visuals
+
+            const blob = new Blob([workerScript], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+            
+            // Show loading state implies
+            
+            worker.onmessage = function(e) {
+                if(e.data.success) {
+                    board = e.data.solution;
+                    renderBoard();
+                } else {
+                    alert(getText('unsolvable'));
+                    // Revert visual lock if failed? optional.
+                }
+                worker.terminate();
+            };
+            
+            worker.postMessage({ cmd: 'solve', board: board });
+        }
 
         /* --- HINT LOGIC --- */
         function requestHint() {
@@ -1014,9 +1247,14 @@
 
             for(let r=0;r<9;r++) for(let c=0;c<9;c++) {
                 const val = board[r][c];
+                // In Solver Mode, numbers in initialBoard are inputs, others are solution
+                // In Game Mode, numbers in initialBoard are fixed, others are player inputs
                 const init = initialBoard[r][c]!==BLANK;
+                
                 const sel = selectedCell && selectedCell[0]===r && selectedCell[1]===c;
-                const err = val!==BLANK && !init && val!==solution[r][c];
+                
+                // Error checking only in Game Mode
+                const err = !isSolverMode && val!==BLANK && !init && val!==solution[r][c];
                 
                 const isHintTarget = currentHintData && currentHintData.target[0]===r && currentHintData.target[1]===c;
                 const isHintRegion = currentHintData && currentHintData.region.some(p => p[0]===r && p[1]===c);
@@ -1035,8 +1273,17 @@
 
                 if(val !== BLANK && val === highlightVal) el.classList.add('same-val');
 
-                if(init) { el.classList.add('initial'); if(sel) el.classList.add('selected'); }
+                if(init) { 
+                    el.classList.add('initial'); 
+                    if(sel) el.classList.add('selected'); 
+                }
                 else if(err && !sel) el.classList.add('error');
+                
+                // Solver specific styling
+                if(isSolverMode && val !== BLANK && !init) {
+                     // This is a solved number
+                     el.style.color = 'var(--success)';
+                }
 
                 if(isHintTarget) el.classList.add('hint-target');
                 if(isHintRegion && !isHintTarget) el.classList.add('hint-region');
@@ -1071,11 +1318,12 @@
             // 1. KLASİK MOD: Kutu seçiliyse ve boşsa doldur
             if(selectedCell) {
                 const [r, c] = selectedCell;
-                if(initialBoard[r][c] === BLANK) {
+                // In Solver Mode, we can always overwrite unless solving is done? 
+                // Let's allow overwriting always in solver mode for correction
+                if(isSolverMode || initialBoard[r][c] === BLANK) {
                     handleInput(num);
-                    return; // İŞLEM TAMAM, ÇIK
+                    return; 
                 }
-                // EĞER KUTU SABİTSE, SEÇİMİ BIRAK, SAYI MODUNA GEÇ
                 selectedCell = null; 
             }
 
@@ -1101,7 +1349,7 @@
                 // Eğer zaten bu hücre seçiliyse ve sayı da aktifse -> Kapat
                 if (selectedCell && selectedCell[0] === r && selectedCell[1] === c && selectedNumberInput === clickedVal) {
                     selectedNumberInput = null;
-                    selectedCell = null; // KEY FIX: Vurguyu tamamen kaldırmak için seçili hücreyi de sil.
+                    selectedCell = null; 
                 } else {
                     // Değilse -> Aç
                     selectedNumberInput = clickedVal;
@@ -1137,9 +1385,21 @@
 
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
-            if(initialBoard[r][c]!==BLANK) return;
+            
+            // In Game Mode, block writing to initial cells
+            if(!isSolverMode && initialBoard[r][c]!==BLANK) return;
+            
             if(board[r][c]===n) return;
 
+            // SOLVER MODE INPUT
+            if(isSolverMode) {
+                saveState(); // SAVE HISTORY FOR UNDO
+                board[r][c] = n;
+                renderBoard();
+                return;
+            }
+
+            // GAME MODE INPUT
             if(notesMode) {
                 const k = `${r}-${c}`;
                 if(!notes[k]) notes[k]=[];
@@ -1176,12 +1436,22 @@
         function handleErase() {
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
-            if(initialBoard[r][c]!==BLANK) return;
+            
+            if(!isSolverMode && initialBoard[r][c]!==BLANK) return;
+            
+            // SAVE STATE ALWAYS NOW (Solver or Game)
             saveState();
-            board[r][c]=BLANK; notes[`${r}-${c}`]=[]; currentHintData=null; 
+            
+            board[r][c]=BLANK; 
+            if(!isSolverMode) notes[`${r}-${c}`]=[]; 
+            
+            // Also clear from initialBoard in solver mode if we are correcting input
+            if(isSolverMode) initialBoard[r][c] = BLANK;
+
+            currentHintData=null; 
             updateUI();
             renderBoard();
-            saveStateToStorage();
+            if(!isSolverMode) saveStateToStorage();
         }
 
         document.addEventListener('keydown', e => {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sudoku Master</title>
     <style>
-        /* --- OFFLINE CSS SYSTEM (Replaces Tailwind) --- */
+        /* --- OFFLINE CSS SYSTEM --- */
         :root {
             --bg-body: #f8fafc;
             --text-main: #1e293b;
@@ -26,7 +26,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
-            /* Mobile Viewport Height Fix */
             height: 100vh;
             height: 100dvh;
             display: flex;
@@ -111,7 +110,7 @@
             background: #f1f5f9;
             padding: 0.5rem 1rem;
             display: grid;
-            grid-template-columns: 1fr auto 1fr; /* Sol, Orta, Sağ */
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
@@ -157,7 +156,7 @@
         /* Thick Borders */
         .cell:nth-child(9n) { border-right: none; }
         .cell:nth-child(3n) { border-right: 2px solid #1e293b; }
-        .cell:nth-child(9n) { border-right: none; } /* Reset for edge */
+        .cell:nth-child(9n) { border-right: none; }
         
         .border-b-thick { border-bottom: 2px solid #1e293b !important; }
         .border-r-thick { border-right: 2px solid #1e293b !important; }
@@ -175,7 +174,6 @@
         /* Hint Styles */
         .hint-target { animation: pulse-green 2s infinite; background-color: #f0fdf4 !important; }
         .hint-region { background-color: #fefce8 !important; } 
-        .hint-blocker { background-color: #fef2f2 !important; color: #ef4444 !important; }
         
         .ghost-number {
             color: var(--success);
@@ -227,8 +225,21 @@
             transition: all 0.2s;
         }
         .num-btn:active { transform: translateY(2px); border-bottom: none; }
-        .num-btn.active-input { background-color: var(--primary); color: white; border-color: var(--primary-hover); transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-        .num-btn.completed { opacity: 0.2; pointer-events: none; background: #e2e8f0; color: #94a3b8; border: none; box-shadow: none; }
+        .num-btn.active-input { 
+            background-color: var(--primary); 
+            color: white; 
+            border-color: var(--primary-hover); 
+            transform: translateY(2px); 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); 
+            border-bottom: none;
+        }
+        .num-btn.completed { 
+            opacity: 0.3; 
+            background: #f1f5f9; 
+            color: #94a3b8; 
+            border-color: transparent; 
+            box-shadow: none; 
+        }
 
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -297,7 +308,6 @@
 
                 <!-- Actions -->
                 <div class="flex flex-col gap-2">
-                     <!-- Continue Button (Hidden by default) -->
                      <button id="btn-continue" onclick="loadSavedGame()" class="hidden btn w-full p-4 font-bold mb-2" style="border-radius: 0.75rem; justify-content: center; gap: 0.5rem; background: var(--success); color: white;">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
                         <span data-key="continue">Devam Et</span>
@@ -313,7 +323,6 @@
                         </div>
                     </button>
 
-                    <!-- Daily Challenge Button -->
                     <button id="btn-daily" onclick="startDailyChallenge()" class="btn w-full p-4 font-bold" style="border-radius: 0.75rem; justify-content: flex-start; gap: 1rem; background: #8b5cf6; color: white;">
                         <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 0.5rem;">
                             <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -324,7 +333,6 @@
                         </div>
                     </button>
                     
-                    <!-- Loading State -->
                     <div id="loading-start" class="hidden w-full p-4 btn-primary font-bold flex items-center justify-center gap-2" style="border-radius: 0.75rem; background: #334155;">
                         <svg class="animate-spin" style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <span data-key="generating">Oluşturuluyor...</span>
@@ -336,7 +344,6 @@
                         <div style="flex:1; height: 1px; background: var(--border);"></div>
                     </div>
 
-                    <!-- Code Section -->
                     <div class="p-4" style="background: #eef2ff; border-radius: 1rem; border: 1px solid #e0e7ff;">
                         <div class="flex items-center gap-2 mb-1">
                             <span data-key="gameCode" class="font-bold text-sm" style="color: var(--primary);">Oyun Kodu</span>
@@ -399,7 +406,7 @@
                 <div id="sudoku-grid" class="grid-9x9"></div>
             </div>
 
-            <!-- Controls (5 Buttons Grid) -->
+            <!-- Controls -->
             <div class="w-full" style="max-width: 28rem;">
                 <div class="controls-grid">
                      <button onclick="undo()" class="control-btn" aria-label="Undo">
@@ -438,16 +445,14 @@
             
             <div class="flex flex-col gap-2">
                 <button id="modal-primary-btn" class="btn btn-primary p-4 font-bold w-full" style="border-radius: 0.75rem;"></button>
-                
                 <button id="modal-review-btn" onclick="reviewBoard()" data-key="reviewBoard" class="hidden btn p-3 font-bold w-full" style="background: #f1f5f9; border: 2px solid var(--border); border-radius: 0.75rem; color: var(--text-main);">Tahtayı İncele</button>
-                
                 <button onclick="showMenu()" data-key="mainMenu" class="btn p-3 font-bold w-full" style="background: white; border: 2px solid var(--border); border-radius: 0.75rem; color: var(--text-muted);">Menü</button>
             </div>
         </div>
     </div>
 
     <script>
-        /* WORKER CODE AS STRING */
+        /* WORKER CODE */
         const workerScript = `
             const BLANK = 0;
             function createSeededRandom(seedStr) {
@@ -537,12 +542,11 @@
         let board = [], initialBoard = [], solution = [], notes = {}, historyStack = [];
         let difficulty = 'Medium', currentCode = null, timer = 0, timerInterval = null;
         let isPaused = false, isGameComplete = false, selectedCell = null, notesMode = false;
-        let selectedNumberInput = null; // New: For "Input First" mode
+        let selectedNumberInput = null; // "Önce Sayı Modu" için aktif sayı
         let mistakes = 0; const MAX_MISTAKES = 3;
-        let hintsLeft = 3; let currentHintData = null; // Increased hints for testing
+        let hintsLeft = 3; let currentHintData = null; 
         let lastInputTime = 0;
 
-        // Validation Logic (needed on main thread for hints/input)
         function isValid(bd, r, c, n) {
             for(let x=0;x<9;x++) if(bd[r][x]===n && x!==c) return false;
             for(let x=0;x<9;x++) if(bd[x][c]===n && x!==r) return false;
@@ -554,10 +558,7 @@
         window.onload = function() {
             setLanguage('tr'); 
             renderDifficultyButtons(); 
-            // renderNumpad(); // Called in updateUI now
             checkSavedGame();
-            
-            // Set Daily Date
             const today = new Date();
             document.getElementById('daily-date-display').innerText = today.toLocaleDateString();
         };
@@ -659,14 +660,12 @@
                 timer = saved.timer || 0; historyStack = saved.historyStack || [];
                 hintsLeft = saved.hintsLeft || 3;
 
-                // Resume Game UI
                 isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null; selectedNumberInput = null;
                 document.getElementById('menu-view').classList.add('hidden');
                 document.getElementById('game-view').classList.remove('hidden');
                 document.getElementById('game-view').classList.add('flex');
                 
                 updateGameHeader();
-                
                 updateUI();
                 renderBoard();
                 startTimer();
@@ -678,7 +677,6 @@
             if(t==='Easy') t=getText('diffEasy'); if(t==='Medium') t=getText('diffMedium'); 
             if(t==='Hard') t=getText('diffHard'); if(t==='Extreme') t=getText('diffExtreme');
             
-            // Display Code in Title, Difficulty in Status Bar
             document.getElementById('game-header-title').innerText = currentCode ? `#${currentCode}` : "SUDOKU";
             document.getElementById('game-difficulty-display').innerText = t;
         }
@@ -731,7 +729,6 @@
                 document.getElementById('modal-overlay').classList.add('hidden');
                 
                 updateGameHeader();
-
                 renderBoard();
                 startTimer();
                 worker.terminate();
@@ -749,7 +746,7 @@
             else { mContainer.style.background='white'; mContainer.style.color='black'; mContainer.style.borderColor='var(--border)'; }
             
             updateHintButton();
-            renderNumpad(); // Updates completed numbers and active state
+            renderNumpad(); 
         }
 
         function updateHintButton() {
@@ -785,7 +782,6 @@
 
         /* --- HINT LOGIC --- */
         function requestHint() {
-            // Priority: Selected Cell Hint -> Global Smart Hint
             if(hintsLeft <= 0 || isPaused || isGameComplete) return;
 
             // If a valid empty cell is selected, hint that specific cell
@@ -796,7 +792,6 @@
                     return;
                 }
             }
-
             findSmartHint();
         }
 
@@ -822,17 +817,14 @@
         function findSmartHint() {
             if(isGameComplete || isPaused) return;
             currentHintData = null;
-
             let candMap = getAllCandidatesMap(board);
 
-            // Singles logic (same as before)
             for(let r=0; r<9; r++) for(let c=0; c<9; c++) {
                 if(candMap[r][c] && candMap[r][c].length === 1) {
                     applyHint(r, c, candMap[r][c][0], 'naked');
                     return;
                 }
             }
-            // Fallback to random empty cell reveal if no obvious move
             let empty = [];
             for(let r=0;r<9;r++) for(let c=0;c<9;c++) if(board[r][c]===BLANK) empty.push([r,c]);
             
@@ -846,14 +838,12 @@
 
         function applyHint(r, c, val, type) {
             currentHintData = { target: [r,c], value: val, type: type, region: [] };
-            
             if(type === 'hidden-row') for(let i=0;i<9;i++) currentHintData.region.push([r,i]);
             else if(type === 'hidden-col') for(let i=0;i<9;i++) currentHintData.region.push([i,c]);
             else if(type === 'hidden-box') {
                 const sr=Math.floor(r/3)*3, sc=Math.floor(c/3)*3;
                 for(let i=0;i<3;i++) for(let j=0;j<3;j++) currentHintData.region.push([sr+i, sc+j]);
             }
-
             selectedCell = [r, c];
             hintsLeft--;
             updateHintButton();
@@ -891,8 +881,6 @@
 
         function reviewBoard() {
             document.getElementById('modal-overlay').classList.add('hidden');
-            // Keep game view but disable interaction basically?
-            // Actually just stay in game view. Inputs are blocked by isGameComplete flag already.
         }
 
         function renderBoard() {
@@ -904,7 +892,7 @@
                 return;
             }
 
-            // Determine what number to highlight
+            // Determine Highlight Value
             let highlightVal = null;
             if(selectedNumberInput) highlightVal = selectedNumberInput;
             else if(selectedCell && board[selectedCell[0]][selectedCell[1]] !== BLANK) {
@@ -928,15 +916,11 @@
                 
                 if(sel) { el.classList.add('selected'); if(err) el.classList.add('error'); }
                 else if(selectedCell) {
-                   // Related row/col logic (optional, keep it subtle)
                    const [sr, sc] = selectedCell;
                    if(sr===r || sc===c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3))) el.classList.add('related');
                 }
 
-                // Global Number Highlighting
-                if(val !== BLANK && val === highlightVal) {
-                    el.classList.add('same-val');
-                }
+                if(val !== BLANK && val === highlightVal) el.classList.add('same-val');
 
                 if(init) { el.classList.add('initial'); if(sel) el.classList.add('selected'); }
                 else if(err && !sel) el.classList.add('error');
@@ -962,68 +946,78 @@
                 }
 
                 el.onclick = () => handleCellClick(r, c);
-                
                 grid.appendChild(el);
             }
         }
 
+        // --- HYBRID INTERACTION LOGIC START ---
+
         function handleNumpadClick(num) {
             if(isGameComplete || isPaused) return;
 
-            // Toggle logic
+            // 1. KLASİK MOD: Kutu seçiliyse ve boşsa doldur
+            if(selectedCell) {
+                const [r, c] = selectedCell;
+                if(initialBoard[r][c] === BLANK) {
+                    handleInput(num);
+                    return; // İŞLEM TAMAM, ÇIK (DÜZELTİLDİ)
+                }
+                // EĞER KUTU SABİTSE (initialBoard doluysa), YAZAMAZSIN.
+                // AMA "RETURN" ETME, AŞAĞIDAKİ SEÇİME İZİN VER.
+                selectedCell = null; // Seçimi temizle ki kafa karışmasın
+            }
+
+            // 2. TOGGLE MOD: Seçim yoksa (veya yukarıda temizlendiyse), sayı modunu aç/kapa
             if(selectedNumberInput === num) {
                 selectedNumberInput = null;
             } else {
                 selectedNumberInput = num;
             }
-
-            // If a cell is currently selected and we click a number, try to fill it (Classic Mode behavior mixed in)
-            if(selectedCell && !selectedNumberInput) { 
-                // Only if we just deselected or if we want dual behavior. 
-                // But user wants "number first" primarily. 
-                // Let's allow filling the currently selected cell if it's empty
-                 if(board[selectedCell[0]][selectedCell[1]] === BLANK) {
-                     handleInput(num);
-                     // After filling, keep the number selected? User said "don't want to select again and again"
-                     selectedNumberInput = num; 
-                 }
-            }
-
-            updateUI();
+            
+            currentHintData = null; 
+            updateUI(); 
             renderBoard();
         }
 
         function handleCellClick(r, c) {
             if(isGameComplete || isPaused) return;
 
-            // If a number is selected (Input First Mode)
-            if(selectedNumberInput !== null) {
-                // If cell is empty, fill it
-                if(board[r][c] === BLANK) {
-                    selectedCell = [r, c];
-                    handleInput(selectedNumberInput);
-                } else {
-                    // Cell not empty, just select it (maybe they want to see related numbers)
-                    selectedCell = [r, c];
-                }
-            } else {
-                // Standard Select Mode
+            const clickedVal = board[r][c];
+
+            // 1. DOLU HÜCRE: Sayıyı "Eline Al" (Kopyala)
+            if (clickedVal !== BLANK) {
+                selectedNumberInput = clickedVal;
                 selectedCell = [r, c];
+                currentHintData = null;
+                updateUI();
+                renderBoard();
+                return;
             }
-            
-            currentHintData = null;
-            renderBoard();
+
+            // 2. BOŞ HÜCRE:
+            // a) Elinde sayı varsa -> YAZ
+            if (selectedNumberInput !== null) {
+                selectedCell = [r, c];
+                handleInput(selectedNumberInput);
+            } 
+            // b) Elinde sayı yoksa -> SEÇ
+            else {
+                selectedCell = [r, c];
+                currentHintData = null;
+                renderBoard();
+            }
         }
+
+        // --- HYBRID INTERACTION LOGIC END ---
 
         function handleInput(n) {
             const now = Date.now();
-            if (now - lastInputTime < 100) return; 
+            if (now - lastInputTime < 50) return; 
             lastInputTime = now;
 
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
             if(initialBoard[r][c]!==BLANK) return;
-            // If already has this number, do nothing
             if(board[r][c]===n) return;
 
             if(notesMode) {
@@ -1051,12 +1045,11 @@
                     let filled=0; for(let i=0;i<9;i++) for(let j=0;j<9;j++) if(board[i][j]!==BLANK) filled++;
                     saveStateToStorage();
                     
-                    // Check if game won
                     if(filled===81) { isGameComplete=true; stopTimer(); showModal('win'); }
                 }
             }
             currentHintData=null;
-            updateUI(); // Updates Numpad for completion status
+            updateUI(); 
             renderBoard();
         }
 
@@ -1075,17 +1068,10 @@
             if(isGameComplete || isPaused) return;
             const k = e.key;
             
-            // Handle Numbers (Numpad input via keyboard)
             if(k>='1' && k<='9') {
                 const num = parseInt(k);
-                // If in "Number First" mode (selectedNumberInput active), keyboard should probably toggle that number 
-                // OR just fill selected cell if one is selected.
-                // Standard behavior: Fill selected cell.
                 if(selectedCell) handleInput(num);
-                else {
-                    // Toggle Numpad Selection
-                    handleNumpadClick(num);
-                }
+                else handleNumpadClick(num); 
             }
 
             if(!selectedCell) return;

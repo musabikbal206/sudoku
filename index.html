@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sudoku Master Ultimate</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -1479,5 +1483,16 @@
             }
         });
     </script>
+    <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((reg) => console.log('Service Worker registered!', reg.scope))
+                    .catch((err) => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+
 </body>
 </html>

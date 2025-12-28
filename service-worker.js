@@ -1,14 +1,16 @@
-const CACHE_NAME = 'sudoku-master-v1';
+const CACHE_NAME = 'sudoku-master-v2'; // Versiyonu v2 yaptık ki eski cache silinsin
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './manifest.json',
-    './icon-192.png',
-    './icon-512.png',
+    './icon.svg', 
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
 ];
 
-// Install Event: Cache files
+// ... kodun geri kalanı aynen kalsın ...
+// (Install, Activate ve Fetch kısımlarına dokunmanıza gerek yok, sadece yukarıyı değiştirin)
+
+// Install Event: Cache files (Burası aynı kalacak)
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -18,13 +20,13 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate Event: Clean up old caches
+// Activate Event (Burası aynı kalacak)
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keyList) => {
             return Promise.all(keyList.map((key) => {
                 if (key !== CACHE_NAME) {
-                    console.log('[Service Worker] Removing old cache', key);
+                    console.log('[Service Worker] Old cache removed', key);
                     return caches.delete(key);
                 }
             }));
@@ -33,7 +35,7 @@ self.addEventListener('activate', (event) => {
     return self.clients.claim();
 });
 
-// Fetch Event: Serve from cache, fall back to network
+// Fetch Event (Burası aynı kalacak)
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request).then((response) => {

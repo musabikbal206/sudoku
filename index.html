@@ -77,6 +77,16 @@
         .mb-1 { margin-bottom: 0.25rem; }
         .mb-6 { margin-bottom: 1.5rem; }
 
+        /* Constrain Width for Desktop (Fix for "So Broad") */
+        .game-wrapper {
+            width: 100%;
+            max-width: 500px; /* Limits width on desktop */
+            margin: 0 auto;   /* Centers it */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         /* Components */
         .btn {
             cursor: pointer;
@@ -88,7 +98,7 @@
             justify-content: center;
         }
         .btn:active { transform: scale(0.96); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
         .btn-primary { background-color: var(--primary); color: var(--white); }
         .btn-primary:hover { background-color: var(--primary-hover); }
@@ -112,6 +122,9 @@
             justify-content: space-between;
             padding: 0 1rem;
             flex-shrink: 0;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         .status-bar {
@@ -124,6 +137,9 @@
             flex-shrink: 0;
             gap: 0.5rem;
             min-height: 3rem;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         /* Grid */
@@ -197,9 +213,10 @@
         /* Controls Grid */
         .controls-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr); /* Changed to 6 for the new toggle button */
             gap: 0.25rem;
             margin-bottom: 1rem;
+            width: 100%;
         }
         .control-btn {
             display: flex;
@@ -218,6 +235,9 @@
         .control-btn:hover { background: var(--white); color: var(--primary); box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
         .control-btn.active { background: var(--primary); color: var(--white); }
         .control-btn svg { width: 1.25rem; height: 1.25rem; margin-bottom: 0.25rem; }
+        
+        /* Specific style for Fast Mode Toggle to distinguish it */
+        #btn-mode.active { background: #e0e7ff; color: var(--primary); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
 
         /* Solver Controls - UPDATED */
         .solver-controls-grid {
@@ -237,6 +257,7 @@
             display: grid;
             grid-template-columns: repeat(9, 1fr);
             gap: 0.25rem;
+            width: 100%;
         }
         .num-btn {
             aspect-ratio: 4/5;
@@ -263,12 +284,15 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); 
             border-bottom: none;
         }
+        /* Completed/Disabled State - Per User Request */
         .num-btn.completed { 
             opacity: 0.3; 
-            background: #f1f5f9; 
+            background: #e2e8f0; 
             color: #94a3b8; 
             border-color: transparent; 
             box-shadow: none; 
+            cursor: not-allowed;
+            pointer-events: none; /* Make it strictly unclickable */
         }
         .remaining-count {
             font-size: 0.65rem;
@@ -455,66 +479,76 @@
              </div>
         </div>
 
-        <!-- Board Area -->
+        <!-- Board Area (Constrained by game-wrapper) -->
         <div class="flex-1 flex flex-col items-center justify-start p-4" style="overflow-y: auto;">
-            <div id="board-container" class="sudoku-container" role="grid" aria-label="Sudoku Board">
-                <div id="sudoku-grid" class="grid-9x9"></div>
-            </div>
-
-            <!-- Controls -->
-            <div class="w-full" style="max-width: 28rem;">
-                
-                <!-- GAME Controls -->
-                <div id="game-controls" class="controls-grid">
-                     <button onclick="undo()" class="control-btn" aria-label="Undo">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
-                        <span data-key="undo">Geri</span>
-                    </button>
-                     <button onclick="resetGame()" class="control-btn" aria-label="Reset">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span data-key="reset">Sıfırla</span>
-                    </button>
-                    <button id="btn-notes" onclick="toggleNotes()" class="control-btn" aria-label="Toggle Notes">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        <span data-key="notes">Notlar</span>
-                    </button>
-                    <button onclick="handleErase()" class="control-btn" style="color: var(--error);" aria-label="Erase Cell">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        <span data-key="erase">Sil</span>
-                    </button>
-                     <button id="btn-hint" onclick="requestHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        <span id="label-hint">İpucu (1)</span>
-                    </button>
+            
+            <div class="game-wrapper">
+                <div id="board-container" class="sudoku-container" role="grid" aria-label="Sudoku Board">
+                    <div id="sudoku-grid" class="grid-9x9"></div>
                 </div>
 
-                <!-- SOLVER Controls - UPDATED -->
-                <div id="solver-controls" class="solver-controls-grid hidden">
-                    <div class="solver-tools-row">
-                        <!-- Undo -->
-                        <button onclick="undo()" class="control-btn" style="background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <!-- Controls -->
+                <div class="w-full">
+                    
+                    <!-- GAME Controls -->
+                    <div id="game-controls" class="controls-grid">
+                        <button onclick="undo()" class="control-btn" aria-label="Undo">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
                             <span data-key="undo">Geri</span>
                         </button>
-                        <!-- Erase -->
-                        <button onclick="handleErase()" class="control-btn" style="background: white; color: var(--error); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <button onclick="resetGame()" class="control-btn" aria-label="Reset">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span data-key="reset">Sıfırla</span>
+                        </button>
+                        <button id="btn-notes" onclick="toggleNotes()" class="control-btn" aria-label="Toggle Notes">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            <span data-key="notes">Notlar</span>
+                        </button>
+                        <button onclick="handleErase()" class="control-btn" style="color: var(--error);" aria-label="Erase Cell">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             <span data-key="erase">Sil</span>
                         </button>
-                        <!-- Clear -->
-                        <button onclick="resetSolver()" class="control-btn" style="background: white; color: var(--text-muted); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            <span data-key="clearBoard">TEMİZLE</span>
+                        <!-- New Input Mode Toggle -->
+                        <button id="btn-mode" onclick="toggleFastMode()" class="control-btn" aria-label="Toggle Input Mode">
+                            <!-- Icons will be swapped by JS -->
+                            <svg id="icon-mode-normal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"></path></svg>
+                            <svg id="icon-mode-fast" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <span id="label-mode" data-key="modeNormal">Normal</span>
+                        </button>
+                        <button id="btn-hint" onclick="requestHint()" class="control-btn" style="color: var(--warning);" aria-label="Use Hint">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            <span id="label-hint">İpucu (1)</span>
                         </button>
                     </div>
 
-                    <button onclick="requestSolverSolution()" class="btn btn-primary p-3 font-bold w-full" style="border-radius: 0.75rem;">
-                        <svg style="width: 1.25rem; height: 1.25rem; margin-right:0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        <span data-key="solveNow">ÇÖZ</span>
-                    </button>
-                </div>
+                    <!-- SOLVER Controls - UPDATED -->
+                    <div id="solver-controls" class="solver-controls-grid hidden">
+                        <div class="solver-tools-row">
+                            <!-- Undo -->
+                            <button onclick="undo()" class="control-btn" style="background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                <span data-key="undo">Geri</span>
+                            </button>
+                            <!-- Erase -->
+                            <button onclick="handleErase()" class="control-btn" style="background: white; color: var(--error); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span data-key="erase">Sil</span>
+                            </button>
+                            <!-- Clear -->
+                            <button onclick="resetSolver()" class="control-btn" style="background: white; color: var(--text-muted); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span data-key="clearBoard">TEMİZLE</span>
+                            </button>
+                        </div>
 
-                <div class="numpad-grid" id="numpad-container"></div>
+                        <button onclick="requestSolverSolution()" class="btn btn-primary p-3 font-bold w-full" style="border-radius: 0.75rem;">
+                            <svg style="width: 1.25rem; height: 1.25rem; margin-right:0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <span data-key="solveNow">ÇÖZ</span>
+                        </button>
+                    </div>
+
+                    <div class="numpad-grid" id="numpad-container"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -627,11 +661,13 @@
         const i18n = {
             en: {
                 subtitle: "Challenge Yourself", difficulty: "Difficulty", singlePlayer: "Single Player", justPlay: "New Game", dailyChallenge: "Daily Challenge", competitive: "Or Play Competitive", gameCode: "Game Code", codeDesc: "Enter the same code to play on the same board.", enterCode: "CODE", mistakes: "Mistakes", time: "Time", undo: "Undo", reset: "Reset", notes: "Notes", erase: "Erase", hint: "Hint", solved: "SOLVED!", finalTime: "Time", mainMenu: "Main Menu", gameOver: "GAME OVER", tooManyMistakes: "Too many mistakes!", tryAgain: "Try Again", menu: "Menu", confirmReset: "Reset the board?", perfect: "Perfect so far!", boardFull: "No obvious moves found!", noHints: "No hints left!", generating: "Generating...", diffEasy: "Easy", diffMedium: "Medium", diffHard: "Hard", diffExtreme: "Extreme", continue: "Continue Game", reviewBoard: "Review Board",
-                tool: "Tools", solverMode: "Solver Mode", clearBoard: "Clear", solveNow: "Solve", unsolvable: "Unsolvable Puzzle!", invalidBoard: "Invalid Board! Check for duplicates.", solving: "Solving..."
+                tool: "Tools", solverMode: "Solver Mode", clearBoard: "Clear", solveNow: "Solve", unsolvable: "Unsolvable Puzzle!", invalidBoard: "Invalid Board! Check for duplicates.", solving: "Solving...",
+                modeNormal: "Normal", modeFast: "Fast"
             },
             tr: {
                 subtitle: "Meydan Oku", difficulty: "Zorluk", singlePlayer: "Tek Oyunculu", justPlay: "Yeni Oyun", dailyChallenge: "Günlük Meydan Okuma", competitive: "Rekabetçi Mod", gameCode: "Oyun Kodu", codeDesc: "Arkadaşınızla aynı tahtada oynamak için kod girin.", enterCode: "KOD", mistakes: "Hatalar", time: "Süre", undo: "Geri", reset: "Sıfırla", notes: "Notlar", erase: "Sil", hint: "İpucu", solved: "ÇÖZÜLDÜ!", finalTime: "Süre", mainMenu: "Ana Menü", gameOver: "OYUN BİTTİ", tooManyMistakes: "Çok fazla hata!", tryAgain: "Tekrar Dene", menu: "Menü", confirmReset: "Tahtayı sıfırlamak istiyor musun?", perfect: "Mükemmel!", boardFull: "Belirgin hamle bulunamadı!", noHints: "İpucu kalmadı!", generating: "Oluşturuluyor...", diffEasy: "Kolay", diffMedium: "Orta", diffHard: "Zor", diffExtreme: "Uzman", continue: "Devam Et", reviewBoard: "Tahtayı İncele",
-                tool: "Araçlar", solverMode: "Çözücü Modu", clearBoard: "Temizle", solveNow: "Çöz", unsolvable: "Çözülemiyor!", invalidBoard: "Geçersiz Tahta! Tekrarları kontrol edin.", solving: "Çözülüyor..."
+                tool: "Araçlar", solverMode: "Çözücü Modu", clearBoard: "Temizle", solveNow: "Çöz", unsolvable: "Çözülemiyor!", invalidBoard: "Geçersiz Tahta! Tekrarları kontrol edin.", solving: "Çözülüyor...",
+                modeNormal: "Normal", modeFast: "Hızlı"
             }
         };
 
@@ -647,6 +683,9 @@
         
         // Solver Mode State
         let isSolverMode = false;
+
+        // New Interaction Mode State
+        let fastMode = false; // false = Cell First (Normal), true = Digit First (Fast)
 
         function isValid(bd, r, c, n) {
             for(let x=0;x<9;x++) if(bd[r][x]===n && x!==c) return false;
@@ -683,6 +722,11 @@
                 if (t[key]) el.innerHTML = t[key];
             });
             document.getElementById('game-code-input').placeholder = t.enterCode;
+            
+            // Update Mode Label
+            const modeLabel = document.getElementById('label-mode');
+            if(modeLabel) modeLabel.innerText = fastMode ? getText('modeFast') : getText('modeNormal');
+
             renderDifficultyButtons(); updateHintButton();
         }
 
@@ -717,12 +761,18 @@
                 const isCompleted = count >= 9;
                 const isActive = selectedNumberInput === i;
                 let className = "btn num-btn";
-                // In solver mode, we don't fade out numbers
-                if(isCompleted && !isSolverMode) className += " completed";
+                
+                // In solver mode, we don't fade out numbers, but in game mode we disable them
+                if(isCompleted && !isSolverMode) {
+                    className += " completed"; // Adds visual disabled style and pointer-events: none
+                }
                 if(isActive) className += " active-input";
                 
+                // Add disabled attribute for accessibility
+                const disabledAttr = (isCompleted && !isSolverMode) ? 'disabled' : '';
+
                 return `
-                    <button onclick="handleNumpadClick(${i})" class="${className}" aria-label="Enter number ${i}">
+                    <button onclick="handleNumpadClick(${i})" class="${className}" ${disabledAttr} aria-label="Enter number ${i}">
                         <span>${i}</span>
                         ${remaining > 0 && !isSolverMode ? `<span class="remaining-count">${remaining}</span>` : ''}
                     </button>
@@ -838,14 +888,14 @@
         }
 
         /* --- PERSISTENCE --- */
-        const SAVE_KEY = 'sudoku_master_save_v2';
+        const SAVE_KEY = 'sudoku_master_save_v3';
 
         function saveStateToStorage() {
             if(isSolverMode) return; // Don't save solver state
             if(isGameComplete) { localStorage.removeItem(SAVE_KEY); return; }
             const state = {
                 board, initialBoard, solution, notes, mistakes,
-                difficulty, currentCode, timer, historyStack, hintsLeft
+                difficulty, currentCode, timer, historyStack, hintsLeft, fastMode
             };
             localStorage.setItem(SAVE_KEY, JSON.stringify(state));
         }
@@ -868,6 +918,7 @@
                 difficulty = saved.difficulty; currentCode = saved.currentCode;
                 timer = saved.timer || 0; historyStack = saved.historyStack || [];
                 hintsLeft = saved.hintsLeft || 3;
+                fastMode = saved.fastMode || false;
 
                 isPaused = false; isGameComplete = false; selectedCell = null; currentHintData = null; selectedNumberInput = null;
                 isSolverMode = false;
@@ -1048,8 +1099,33 @@
             if(mistakes>0) { mContainer.style.background='#fef2f2'; mContainer.style.color='var(--error)'; mContainer.style.borderColor='var(--error)'; }
             else { mContainer.style.background='white'; mContainer.style.color='black'; mContainer.style.borderColor='var(--border)'; }
             
+            // Update Mode Button UI
+            const modeBtn = document.getElementById('btn-mode');
+            const iconNormal = document.getElementById('icon-mode-normal');
+            const iconFast = document.getElementById('icon-mode-fast');
+            const labelMode = document.getElementById('label-mode');
+
+            if(fastMode) {
+                modeBtn.classList.add('active');
+                iconNormal.classList.add('hidden');
+                iconFast.classList.remove('hidden');
+                labelMode.innerText = getText('modeFast');
+            } else {
+                modeBtn.classList.remove('active');
+                iconNormal.classList.remove('hidden');
+                iconFast.classList.add('hidden');
+                labelMode.innerText = getText('modeNormal');
+            }
+
             updateHintButton();
             renderNumpad(); 
+        }
+
+        function toggleFastMode() {
+            fastMode = !fastMode;
+            // Clear current input if switching modes to avoid confusion
+            selectedNumberInput = null;
+            updateUI();
         }
 
         function updateHintButton() {
@@ -1316,24 +1392,26 @@
             }
         }
 
-        // --- HYBRID INTERACTION LOGIC START ---
+        // --- HYBRID INTERACTION LOGIC (Updated for Modes) ---
 
         function handleNumpadClick(num) {
             if(isGameComplete || isPaused) return;
 
+            // CHECK: If number is completed, do nothing (Unclickable)
+            const counts = getNumberCounts();
+            if(!isSolverMode && counts[num] >= 9) return; 
+
             // 1. KLASİK MOD: Kutu seçiliyse ve boşsa doldur
             if(selectedCell) {
                 const [r, c] = selectedCell;
-                // In Solver Mode, we can always overwrite unless solving is done? 
-                // Let's allow overwriting always in solver mode for correction
                 if(isSolverMode || initialBoard[r][c] === BLANK) {
                     handleInput(num);
                     return; 
                 }
-                selectedCell = null; 
+                // Don't deselect here, just do nothing if cell is filled
             }
 
-            // 2. TOGGLE MOD
+            // 2. Set as active input
             if(selectedNumberInput === num) {
                 selectedNumberInput = null;
             } else {
@@ -1350,16 +1428,37 @@
 
             const clickedVal = board[r][c];
 
-            // 1. DOLU HÜCRE: Sayıyı "Eline Al" (Kopyala) veya "Bırak" (Toggle)
+            // 1. DOLU HÜCRE
             if (clickedVal !== BLANK) {
-                // Eğer zaten bu hücre seçiliyse ve sayı da aktifse -> Kapat
-                if (selectedCell && selectedCell[0] === r && selectedCell[1] === c && selectedNumberInput === clickedVal) {
-                    selectedNumberInput = null;
-                    selectedCell = null; 
-                } else {
-                    // Değilse -> Aç
-                    selectedNumberInput = clickedVal;
-                    selectedCell = [r, c];
+                
+                // --- FAST MODE LOGIC ---
+                if(fastMode) {
+                    // "Pick Up" the number
+                     if (selectedCell && selectedCell[0] === r && selectedCell[1] === c && selectedNumberInput === clickedVal) {
+                        selectedNumberInput = null;
+                        selectedCell = null; 
+                    } else {
+                        // Check if this number is already completed before picking it up?
+                        // User requirement: "When a number is finished make it unclickable."
+                        // Usually applies to the source. If I pick up a '5' and 5s are done, I can't place it anyway.
+                        // But let's allow highlighting it.
+                        
+                        selectedNumberInput = clickedVal;
+                        selectedCell = [r, c];
+                    }
+                } 
+                // --- NORMAL MODE LOGIC ---
+                else {
+                    // Just select the cell, DO NOT pick up the number
+                    if (selectedCell && selectedCell[0] === r && selectedCell[1] === c) {
+                        selectedCell = null; // deselect if clicked again
+                    } else {
+                        selectedCell = [r, c];
+                    }
+                    // Explicitly ensure we don't accidentally pick up input in normal mode
+                    // unless we want to keep the previous input? No, typically clicking board resets input in Normal mode
+                    // selectedNumberInput = null; // Optional: Clear pen when clicking board?
+                    // Let's keep the pen if they selected it from numpad, but don't CHANGE it from board.
                 }
                 
                 currentHintData = null;
@@ -1369,20 +1468,16 @@
             }
 
             // 2. BOŞ HÜCRE:
-            // a) Elinde sayı varsa -> YAZ
             if (selectedNumberInput !== null) {
                 selectedCell = [r, c];
                 handleInput(selectedNumberInput);
             } 
-            // b) Elinde sayı yoksa -> SEÇ
             else {
                 selectedCell = [r, c];
                 currentHintData = null;
                 renderBoard();
             }
         }
-
-        // --- HYBRID INTERACTION LOGIC END ---
 
         function handleInput(n) {
             const now = Date.now();
@@ -1392,6 +1487,12 @@
             if(!selectedCell || isGameComplete || isPaused) return;
             const [r,c] = selectedCell;
             
+            // Check completed again just in case
+            if(!isSolverMode) {
+                const counts = getNumberCounts();
+                if(counts[n] >= 9 && board[r][c] !== n) return; // Allow re-clicking same number
+            }
+
             // In Game Mode, block writing to initial cells
             if(!isSolverMode && initialBoard[r][c]!==BLANK) return;
             

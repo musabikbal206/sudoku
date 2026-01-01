@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sudoku Master Ultimate</title>
+    <title>Sudoku</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -208,6 +208,26 @@
             opacity: 0.6;
             font-weight: bold;
             animation: bounce 0.5s;
+        }
+
+        /* Drag Ghost */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transform: translate(-50%, -50%);
+            opacity: 0.9;
         }
 
         /* Controls Grid */
@@ -687,6 +707,13 @@
         // New Interaction Mode State
         let fastMode = false; // false = Cell First (Normal), true = Digit First (Fast)
 
+        // Drag State
+        let dragSrcNum = null;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let isDragging = false;
+        let dragGhostEl = null;
+
         function isValid(bd, r, c, n) {
             for(let x=0;x<9;x++) if(bd[r][x]===n && x!==c) return false;
             for(let x=0;x<9;x++) if(bd[x][c]===n && x!==r) return false;
@@ -770,9 +797,15 @@
                 
                 // Add disabled attribute for accessibility
                 const disabledAttr = (isCompleted && !isSolverMode) ? 'disabled' : '';
-
+                
+                // Added ontouchstart for Drag & Drop feature (Mobile)
+                // Added onmousedown for Drag & Drop feature (Desktop)
                 return `
-                    <button onclick="handleNumpadClick(${i})" class="${className}" ${disabledAttr} aria-label="Enter number ${i}">
+                    <button 
+                        ontouchstart="handleNumpadTouchStart(event, ${i})" 
+                        onmousedown="handleNumpadMouseDown(event, ${i})"
+                        onclick="handleNumpadClick(${i})" 
+                        class="${className}" ${disabledAttr} aria-label="Enter number ${i}">
                         <span>${i}</span>
                         ${remaining > 0 && !isSolverMode ? `<span class="remaining-count">${remaining}</span>` : ''}
                     </button>
@@ -1344,6 +1377,11 @@
                 const el = document.createElement('div');
                 el.className = 'cell';
                 
+                // --- ADDED ATTRIBUTES FOR DRAG & DROP SUPPORT ---
+                el.setAttribute('data-r', r);
+                el.setAttribute('data-c', c);
+                // ------------------------------------------------
+
                 if(c%3===2 && c!==8) el.classList.add('border-r-thick');
                 if(r%3===2 && r!==8) el.classList.add('border-b-thick');
                 
@@ -1392,7 +1430,157 @@
             }
         }
 
-        // --- HYBRID INTERACTION LOGIC (Updated for Modes) ---
+        // --- DRAG AND DROP HANDLERS START ---
+
+        function handleNumpadTouchStart(e, num) {
+            // If completed and not solver mode, don't allow drag
+            const counts = getNumberCounts();
+            if(!isSolverMode && counts[num] >= 9) return;
+
+            // Store initial data
+            dragSrcNum = num;
+            const touch = e.touches[0];
+            dragStartX = touch.clientX;
+            dragStartY = touch.clientY;
+            isDragging = false;
+
+            // Attach global move/end listeners to handle the drag outside the button
+            // Use passive: false to allow preventDefault
+            document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+            document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
+        }
+
+        function handleGlobalTouchMove(e) {
+            const touch = e.touches[0];
+            const dx = touch.clientX - dragStartX;
+            const dy = touch.clientY - dragStartY;
+
+            if (!isDragging) {
+                // Threshold check (e.g. 10px) to distinguish tap from drag
+                if (Math.sqrt(dx*dx + dy*dy) > 10) {
+                    isDragging = true;
+                    createDragGhost(dragSrcNum, touch.clientX, touch.clientY);
+                }
+            }
+
+            if (isDragging) {
+                e.preventDefault(); // Stop scrolling
+                if (dragGhostEl) {
+                    dragGhostEl.style.left = touch.clientX + 'px';
+                    dragGhostEl.style.top = touch.clientY + 'px';
+                }
+            }
+        }
+
+        function handleGlobalTouchEnd(e) {
+            document.removeEventListener('touchmove', handleGlobalTouchMove);
+            document.removeEventListener('touchend', handleGlobalTouchEnd);
+
+            if (isDragging) {
+                // It was a drag-drop
+                if (dragGhostEl) {
+                    // Find drop target
+                    const touch = e.changedTouches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    
+                    // Cleanup ghost immediately
+                    dragGhostEl.remove();
+                    dragGhostEl = null;
+
+                    if (target) {
+                        // Find closest cell parent if target is a child (like the number inside)
+                        const cell = target.closest('.cell');
+                        if (cell) {
+                            const r = parseInt(cell.getAttribute('data-r'));
+                            const c = parseInt(cell.getAttribute('data-c'));
+                            
+                            // Select and Fill
+                            selectedCell = [r, c]; 
+                            handleInput(dragSrcNum);
+                        }
+                    }
+                }
+            } 
+            
+            // Reset
+            isDragging = false;
+            dragSrcNum = null;
+        }
+
+        // --- MOUSE DRAG HANDLERS ---
+        function handleNumpadMouseDown(e, num) {
+            // Prevent default to avoid text selection or weird behavior
+            // e.preventDefault(); 
+            
+            const counts = getNumberCounts();
+            if(!isSolverMode && counts[num] >= 9) return;
+
+            dragSrcNum = num;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            isDragging = false;
+
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+        }
+
+        function handleGlobalMouseMove(e) {
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+
+            if (!isDragging) {
+                if (Math.sqrt(dx*dx + dy*dy) > 10) {
+                    isDragging = true;
+                    createDragGhost(dragSrcNum, e.clientX, e.clientY);
+                }
+            }
+
+            if (isDragging) {
+                if (dragGhostEl) {
+                    dragGhostEl.style.left = e.clientX + 'px';
+                    dragGhostEl.style.top = e.clientY + 'px';
+                }
+            }
+        }
+
+        function handleGlobalMouseUp(e) {
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+
+            if (isDragging) {
+                // Drag drop finished
+                if (dragGhostEl) {
+                    dragGhostEl.remove();
+                    dragGhostEl = null;
+                    
+                    const target = document.elementFromPoint(e.clientX, e.clientY);
+                    if (target) {
+                        const cell = target.closest('.cell');
+                        if (cell) {
+                            const r = parseInt(cell.getAttribute('data-r'));
+                            const c = parseInt(cell.getAttribute('data-c'));
+                            selectedCell = [r, c];
+                            handleInput(dragSrcNum);
+                        }
+                    }
+                }
+            }
+
+            isDragging = false;
+            dragSrcNum = null;
+        }
+
+        function createDragGhost(num, x, y) {
+            if(dragGhostEl) dragGhostEl.remove();
+            dragGhostEl = document.createElement('div');
+            dragGhostEl.className = 'drag-ghost';
+            dragGhostEl.innerText = num;
+            dragGhostEl.style.left = x + 'px';
+            dragGhostEl.style.top = y + 'px';
+            document.body.appendChild(dragGhostEl);
+        }
+
+        // --- DRAG AND DROP HANDLERS END ---
 
         function handleNumpadClick(num) {
             if(isGameComplete || isPaused) return;
@@ -1438,11 +1626,6 @@
                         selectedNumberInput = null;
                         selectedCell = null; 
                     } else {
-                        // Check if this number is already completed before picking it up?
-                        // User requirement: "When a number is finished make it unclickable."
-                        // Usually applies to the source. If I pick up a '5' and 5s are done, I can't place it anyway.
-                        // But let's allow highlighting it.
-                        
                         selectedNumberInput = clickedVal;
                         selectedCell = [r, c];
                     }
@@ -1455,10 +1638,6 @@
                     } else {
                         selectedCell = [r, c];
                     }
-                    // Explicitly ensure we don't accidentally pick up input in normal mode
-                    // unless we want to keep the previous input? No, typically clicking board resets input in Normal mode
-                    // selectedNumberInput = null; // Optional: Clear pen when clicking board?
-                    // Let's keep the pen if they selected it from numpad, but don't CHANGE it from board.
                 }
                 
                 currentHintData = null;
@@ -1496,6 +1675,9 @@
             // In Game Mode, block writing to initial cells
             if(!isSolverMode && initialBoard[r][c]!==BLANK) return;
             
+            // LOCK CORRECT CELLS: If the cell is already correct, don't allow changes
+            if(!isSolverMode && board[r][c] === solution[r][c]) return;
+
             if(board[r][c]===n) return;
 
             // SOLVER MODE INPUT
@@ -1546,6 +1728,9 @@
             
             if(!isSolverMode && initialBoard[r][c]!==BLANK) return;
             
+            // LOCK CORRECT CELLS: If the cell is already correct, don't allow erasing
+            if(!isSolverMode && board[r][c] === solution[r][c]) return;
+
             // SAVE STATE ALWAYS NOW (Solver or Game)
             saveState();
             
